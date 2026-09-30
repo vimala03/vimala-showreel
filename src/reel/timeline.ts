@@ -41,10 +41,18 @@ function along(path: SVGPathElement, len: number, p: number) {
   return { x: pt.x, y: pt.y }
 }
 
-export function buildReel(stage: HTMLElement, layout: Layout) {
-  const land = layout === 'land'
-  const W = land ? 1440 : 1000
-  const H = land ? 1000 : 1440
+/** Virtual canvas size per composition (kept in sync with Reel.tsx and styles.css). */
+export const STAGE: Record<Layout, [number, number]> = {
+  land: [1440, 1000],
+  port: [1000, 1440],
+  phone: [600, 900],
+  short: [1000, 460],
+}
+
+export function buildReel(stage: HTMLElement, layout: Layout, dims: [number, number] = STAGE[layout]) {
+  // Wide compositions (land, short) share landscape choreography; tall ones (port, phone) share portrait.
+  const land = layout === 'land' || layout === 'short'
+  const [W, H] = dims
   const q = <T extends Element = HTMLElement>(s: string) => stage.querySelector(s) as T
   const qa = <T extends Element = HTMLElement>(s: string) => [...stage.querySelectorAll(s)] as T[]
   const b = (s: string | Element) => box(typeof s === 'string' ? q(s) : s, stage)
@@ -288,7 +296,7 @@ export function buildReel(stage: HTMLElement, layout: Layout) {
     const B = C0 + span + 0.2
     tl.to(chips, { autoAlpha: 0.14, duration: 0.6 }, B)
     tl.to(sig, { autoAlpha: 0, duration: 0.3 }, B)
-    tl.to(counter, { x: cx - m.counter.cx, y: cy - m.counter.cy, scale: land ? 2.1 : 1.8, duration: 1.0, ease: 'expo.inOut' }, B)
+    tl.to(counter, { x: cx - m.counter.cx, y: cy - m.counter.cy, scale: { land: 2.1, port: 1.8, phone: 1.3, short: 1.6 }[layout], duration: 1.0, ease: 'expo.inOut' }, B)
 
     // Collapse: everything compresses into one action.
     const K = B + 1.6
@@ -362,7 +370,12 @@ export function buildReel(stage: HTMLElement, layout: Layout) {
     const arc = q<SVGPathElement>('.fl-arc')
     const svg = q<SVGSVGElement>('.fl-svg')
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`)
-    arc.setAttribute('d', land ? 'M 170 640 C 470 170, 980 150, 1270 470' : 'M 140 560 C 300 180, 720 160, 860 420')
+    arc.setAttribute('d', {
+      land: 'M 170 640 C 470 170, 980 150, 1270 470',
+      port: 'M 140 560 C 300 180, 720 160, 860 420',
+      phone: 'M 70 520 C 140 230, 440 210, 530 420',
+      short: 'M 110 330 C 300 70, 700 60, 890 270',
+    }[layout])
     const len = arc.getTotalLength()
 
     show('.s-fl', S)
@@ -393,7 +406,7 @@ export function buildReel(stage: HTMLElement, layout: Layout) {
     tl.fromTo(q('.fl-desk'), { autoAlpha: 0, x: 380 }, { autoAlpha: 1, x: 0, duration: 0.9, ease: 'expo.out' }, F + 0.15)
     tl.fromTo(q('.fl-mob'), { autoAlpha: 0, y: 260 }, { autoAlpha: 1, y: 0, duration: 0.9, ease: 'expo.out' }, F + 0.35)
     tl.fromTo(q('.fl-hotel'), { autoAlpha: 0, x: -300 }, { autoAlpha: 0.9, x: 0, duration: 0.9, ease: 'expo.out' }, F + 0.5)
-    tl.to(q('.fl-frames'), { x: land ? -60 : -30, duration: 4.4, ease: 'none' }, F + 0.2)
+    tl.to(q('.fl-frames'), { x: { land: -60, port: -30, phone: -16, short: -36 }[layout], duration: 4.4, ease: 'none' }, F + 0.2)
 
     // Impact, counted up.
     const I = F + 2.7
@@ -420,7 +433,7 @@ export function buildReel(stage: HTMLElement, layout: Layout) {
     tl.fromTo(q('.cv-tint'), { autoAlpha: 0 }, { autoAlpha: 1, duration: 2.2, ease: 'sine.inOut' }, S)
     labelIn('.s-cv', S + 0.4)
     tl.fromTo(q('.cv-map'), { autoAlpha: 0 }, { autoAlpha: 0.7, duration: 1.8, ease: 'sine.inOut' }, S + 0.4)
-    tl.fromTo(q('.cv-map img'), { xPercent: 0 }, { xPercent: land ? -24 : -34, duration: 6.2, ease: 'none' }, S + 0.4)
+    tl.fromTo(q('.cv-map img'), { xPercent: 0 }, { xPercent: { land: -24, port: -34, phone: -30, short: -14 }[layout], duration: 6.2, ease: 'none' }, S + 0.4)
 
     tl.set(sig, { backgroundColor: WARM, scale: 0.6, autoAlpha: 0, x: m.cvWords[0].cx, y: m.cvWords[0].y + m.cvWords[0].h + 22 }, S + 1.5)
     words.forEach((w, i) => {

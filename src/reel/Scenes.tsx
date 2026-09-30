@@ -2,7 +2,15 @@ import { Split } from './Split'
 import { PROFILE } from '../content/profile'
 import { PROJECTS, REEL_FACTS } from '../content/projects'
 
-export type Layout = 'land' | 'port'
+/**
+ * Stage compositions. Each is a fixed virtual canvas scaled to fit, with its own
+ * positions and type sizes (see styles.css):
+ *   land  1440×1000  desktop, iPad landscape
+ *   port  1000×1440  iPad portrait, tablets
+ *   phone  600×900   portrait phones
+ *   short 1000×460   landscape phones
+ */
+export type Layout = 'land' | 'port' | 'phone' | 'short'
 
 const [YC, CS, FL, CV] = PROJECTS
 
@@ -108,9 +116,14 @@ export const CS_CHIPS = [
 
 /** Deterministic jittered grid, in % of the stage. */
 export function chipSlots(layout: Layout) {
-  const cols = layout === 'land' ? 6 : 5
+  const cols = { land: 6, port: 5, phone: 3, short: 6 }[layout]
   const rows = Math.ceil(CS_CHIPS.length / cols)
-  const [x0, x1, y0, y1] = layout === 'land' ? [7, 86, 20, 78] : [7, 80, 18, 70]
+  const [x0, x1, y0, y1] = {
+    land: [7, 86, 20, 78],
+    port: [7, 80, 18, 70],
+    phone: [5, 64, 15, 88],
+    short: [3, 83, 20, 84],
+  }[layout]
   return CS_CHIPS.map((_, i) => {
     const c = i % cols
     const r = Math.floor(i / cols)

@@ -12,9 +12,9 @@ const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)'
 
 /**
  * Two quiet, independent chips in the rail:
- *   ♫ Music  /  ♫ Music off      score + sound design
- *   Voice    /  Voice on         optional narration (a guided tour)
- * When the browser blocked autoplay, the Music chip reads "Sound off · Tap to play";
+ *   ♫ Music  /  ♫ Muted          score + sound design
+ *   Voice Off /  Voice On        optional narration (a guided tour)
+ * When the browser blocked autoplay, the Music chip reads "Tap for sound";
  * any first tap then starts music only and never toggles anything.
  */
 export default function AudioControl() {
@@ -48,13 +48,13 @@ export default function AudioControl() {
         type="button"
         className="aud__chip aud__chip--music"
         data-state={waiting ? 'waiting' : playing ? 'on' : music ? 'pending' : 'off'}
-        aria-pressed={music && !waiting}
-        aria-label={waiting ? 'Sound is off. Tap to play music' : music ? 'Music on. Turn music off' : 'Music off. Turn music on'}
+        aria-label={waiting ? 'Tap for sound: play music' : music ? 'Mute music' : 'Play music'}
+        title={waiting ? 'Tap for sound' : music ? 'Music on · tap to mute' : 'Music muted · tap to play'}
         onClick={onMusic}
       >
         <span className={`aud__ind aud__ind--dot${pulse ? ' is-pulsing' : ''}`} aria-hidden="true" />
         <span className="aud__glyph" aria-hidden="true">♫</span>
-        <span className="aud__label">{waiting ? 'Sound off · Tap to play' : music ? 'Music' : 'Music off'}</span>
+        <span className={`aud__label${waiting ? ' aud__label--keep' : ''}`}>{waiting ? 'Tap for sound' : music ? 'Music' : 'Muted'}</span>
       </button>
       {!reducedMotion() && (
         <button
@@ -62,12 +62,12 @@ export default function AudioControl() {
           className="aud__chip aud__chip--voice"
           data-state={voice ? 'on' : 'off'}
           data-speaking={voice && audio.speaking ? '' : undefined}
-          aria-pressed={voice}
-          aria-label={voice ? 'Narration on. Turn voice off' : 'Narration off. Turn voice on'}
+          aria-label={voice ? 'Disable voiceover' : 'Enable voiceover'}
+          title={voice ? 'Voiceover on · tap to turn off' : 'Voiceover off · tap to turn on'}
           onClick={onVoice}
         >
           <span className="aud__ind aud__ind--ring" aria-hidden="true" />
-          <span className="aud__label">{voice ? 'Voice on' : 'Voice'}</span>
+          <span className="aud__label aud__label--keep">{voice ? 'Voice On' : 'Voice Off'}</span>
         </button>
       )}
     </div>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import type { PointerEvent as RPointerEvent } from 'react'
 import { gsap } from 'gsap'
 import { SceneCivtech, SceneCornerstone, SceneEnd, SceneFlyin, SceneOpening, SceneYouClean, type Layout } from './Scenes'
-import { buildReel, type Chapter, type ChapterId } from './timeline'
+import { buildReel, STAGE, type Chapter, type ChapterId } from './timeline'
 import { PROJECTS } from '../content/projects'
 import { openWithTransition } from '../lib/transition'
 import { audio } from '../audio/engine'
@@ -11,7 +11,11 @@ import AudioControl from '../audio/AudioControl'
 /** Survives navigation to an overview and back, so the reel resumes where it paused. */
 export const reelMemory = { time: 0, wasPlaying: true, visited: false }
 
-const DIMS: Record<Layout, [number, number]> = { land: [1440, 1000], port: [1000, 1440] }
+/** Choose a composition from the viewport's shape (not a scaled-down desktop). */
+function pickLayout(w: number, h: number): Layout {
+  if (h > w * 1.05) return w < 700 ? 'phone' : 'port'
+  return h < 560 ? 'short' : 'land'
+}
 const PROJECT_OF: Partial<Record<ChapterId, string>> = {
   youclean: 'youclean', cornerstone: 'cornerstone', flyin: 'flyin', civtech: 'civtech',
 }
@@ -40,11 +44,34 @@ function useViewport() {
 
 export default function Reel() {
   const vp = useViewport()
-  const layout: Layout = vp.h > vp.w * 1.05 ? 'port' : 'land'
-  const [W, H] = DIMS[layout]
-  const TOP = 64
-  const BOTTOM = layout === 'port' ? 156 : 104
-  const scale = Math.min(vp.w / W, (vp.h - TOP - BOTTOM) / H)
+  const layout = pickLayout(vp.w, vp.h)
+  // Shorter phones (iPhone SE-class, 320×568) get a compact 600×740 phone composition.
+  const compact = layout === 'phone' && vp.h / vp.w < 1.95
+  const [W, H]: [number, number] = compact ? [600, 740] : STAGE[layout]
+
+  // The stage fills exactly the space between the real top bar and the real rail
+  // (both include safe-area insets), measured rather than assumed.
+  const railRef = useRef<HTMLDivElement>(null)
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const [frame, setFrame] = useState({ top: 64, bottom: 104, w: vp.w, h: vp.h - 168 })
+  useLayoutEffect(() => {
+    const measure = () => {
+      const bar = document.querySelector('.topbar')
+      const top = bar ? Math.round(bar.getBoundingClientRect().bottom) : 64
+      const bottom = railRef.current?.offsetHeight ?? 104
+      const v = viewportRef.current
+      // Height from the chrome itself (the viewport element may not have re-laid out yet).
+      setFrame({ top, bottom, w: v?.clientWidth ?? window.innerWidth, h: Math.max(0, window.innerHeight - top - bottom) })
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    const bar = document.querySelector('.topbar')
+    if (bar) ro.observe(bar)
+    if (railRef.current) ro.observe(railRef.current)
+    if (viewportRef.current) ro.observe(viewportRef.current)
+    return () => ro.disconnect()
+  }, [vp.w, vp.h, layout])
+  const scale = Math.max(0.1, Math.min(frame.w / W, frame.h / H))
 
   const stageRef = useRef<HTMLDivElement>(null)
   const tlRef = useRef<gsap.core.Timeline | null>(null)
@@ -72,7 +99,7 @@ export default function Reel() {
     document.fonts.ready.then(() => {
       if (cancelled) return
       ctx = gsap.context(() => {
-        const { tl, chapters: ch, cues, marks, duration: d } = buildReel(stage, layout)
+        const { tl, chapters: ch, cues, marks, duration: d } = buildReel(stage, layout, [W, H])
         tlRef.current = tl
         // Dev only: lets frame-by-frame review seek the timeline from the console.
         if (import.meta.env.DEV) (window as unknown as { __reel: unknown }).__reel = { tl, chapters: ch, cues, marks }
@@ -118,7 +145,7 @@ export default function Reel() {
       ctx?.revert()
       tlRef.current = null
     }
-  }, [layout, rm, chapterAt])
+  }, [layout, compact, rm, chapterAt])
 
   const play = useCallback(() => {
     const tl = tlRef.current
@@ -254,6 +281,17 @@ export default function Reel() {
     scrub.current = null
   }
 
+  // On compact rails the chapter list scrolls horizontally; keep the active chapter in view.
+  const chaptersRef = useRef<HTMLOListElement>(null)
+  useEffect(() => {
+    const ol = chaptersRef.current
+    if (!ol || ol.scrollWidth <= ol.clientWidth + 1) return
+    const li = ol.querySelector<HTMLElement>('[aria-current="step"]')?.closest('li')
+    if (!li) return
+    const left = li.offsetLeft - (ol.clientWidth - li.offsetWidth) / 2
+    ol.scrollTo({ left: Math.max(0, left), behavior: reducedMotion() ? 'auto' : 'smooth' })
+  }, [current, layout])
+
   const currentProject = PROJECT_OF[current] ? PROJECTS.find((p) => p.id === PROJECT_OF[current]) : undefined
 
   return (
@@ -265,8 +303,9 @@ export default function Reel() {
       </p>
 
       <div
+        ref={viewportRef}
         className="reel__viewport"
-        style={{ top: TOP, bottom: BOTTOM }}
+        style={{ top: frame.top, bottom: frame.bottom }}
         onPointerDown={onStageDown}
         onPointerUp={onStageUp}
         onPointerCancel={() => { gesture.current = null }}
@@ -275,6 +314,7 @@ export default function Reel() {
           ref={stageRef}
           className="stage"
           data-layout={layout}
+          data-compact={compact || undefined}
           aria-hidden="true"
           style={{ width: W, height: H, transform: `translate(-50%, -50%) scale(${scale})` }}
         >
@@ -288,13 +328,13 @@ export default function Reel() {
         </div>
       </div>
 
-      <div className="rail" style={{ height: BOTTOM }}>
+      <div className="rail" ref={railRef}>
         {rm ? (
           <button type="button" className="rail__play" onClick={() => step(1)} aria-label="Next scene">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
           </button>
         ) : (
-          <button type="button" className="rail__play" onClick={toggle} aria-label={playing ? 'Pause showreel' : 'Play showreel'} aria-pressed={playing}>
+          <button type="button" className="rail__play" onClick={toggle} aria-label={playing ? 'Pause showreel' : 'Resume showreel'} aria-pressed={playing}>
             {playing ? (
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
             ) : (
@@ -327,7 +367,7 @@ export default function Reel() {
               </span>
             ))}
           </div>
-          <ol className="rail__chapters">
+          <ol className="rail__chapters" ref={chaptersRef}>
             {chapters.map((c, i) => {
               const pid = PROJECT_OF[c.id]
               const p = pid ? PROJECTS.find((x) => x.id === pid) : undefined
@@ -349,9 +389,9 @@ export default function Reel() {
           </ol>
         </div>
         {currentProject ? (
-          <button type="button" className="reel__open" onClick={() => openProject(currentProject.id)} key={currentProject.id}>
+          <button type="button" className="reel__open" onClick={() => openProject(currentProject.id)} key={currentProject.id} aria-label={`Open ${currentProject.shortName} overview`}>
             <span className="reel__open-i">{currentProject.index}</span>
-            <span className="reel__open-n">Open {currentProject.shortName}</span>
+            <span className="reel__open-n">Open<span className="reel__open-name"> {currentProject.shortName}</span></span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" /></svg>
           </button>
         ) : (

@@ -136,7 +136,7 @@ html[data-vt='open'] .screen { animation: none; }
   content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.05; mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
-.reel__viewport { position: absolute; left: 0; right: 0; overflow: hidden; cursor: pointer; }
+.reel__viewport { position: absolute; left: env(safe-area-inset-left); right: env(safe-area-inset-right); overflow: hidden; cursor: pointer; }
 .stage { position: absolute; left: 50%; top: 50%; transform-origin: 50% 50%; opacity: 0; transition: opacity 0.5s var(--ease); }
 .reel[data-ready] .stage { opacity: 1; }
 
@@ -432,7 +432,7 @@ html[data-vt='open'] .screen { animation: none; }
 .cta--off { background: transparent; color: var(--muted); border: 1px dashed var(--border-strong); }
 .seg { display: inline-flex; padding: 4px; border-radius: 999px; border: 1px solid var(--border-strong); }
 .seg__opt {
-  min-height: 40px; min-width: 52px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; cursor: pointer;
+  min-height: 44px; min-width: 52px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; cursor: pointer;
   font-size: 12px; font-weight: 500; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase;
   transition: background-color 0.25s var(--ease), color 0.2s;
 }
@@ -574,8 +574,7 @@ html[data-vt='open'] .screen { animation: none; }
   100% { box-shadow: 0 0 0 9px rgba(var(--accent-rgb), 0); }
 }
 /* Autoplay blocked: an invitation, not an alarm. */
-.aud__chip--music[data-state='waiting'] { color: var(--secondary); border-color: var(--border-strong); letter-spacing: 0.06em; padding-right: 13px; gap: 7px; }
-.aud__chip--music[data-state='waiting'] .aud__glyph { display: none; }
+.aud__chip--music[data-state='waiting'] { color: var(--ink); border-color: rgba(var(--accent-rgb), 0.55); }
 .aud__chip--music[data-state='waiting'] .aud__ind--dot { background: transparent; border: 1px solid var(--secondary); animation: aud-breathe 2.6s ease-in-out infinite; }
 @keyframes aud-breathe { 50% { opacity: 0.35; } }
 
@@ -593,3 +592,301 @@ html[data-vt='open'] .screen { animation: none; }
 
 /* Balanced line breaks on spoken/editorial lines (no orphans). */
 .o-pov, .end-t1, .end-t2, .cv-line { text-wrap: balance; }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   RESPONSIVE CHROME — phones, landscape phones, narrow screens
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Top bar never overflows: the VB mark already returns to the showreel. */
+@media (max-width: 420px) {
+  .topbar__nav .nav-link:first-child { display: none; }
+  .nav-link { padding: 0 9px; letter-spacing: 0.08em; }
+  .brand { padding-right: 4px; }
+}
+/* Landscape phones: a compact bar leaves room for the stage. */
+@media (orientation: landscape) and (max-height: 560px) {
+  :root { --topbar: 48px; }
+  .brand__role, .status__label { display: none; }
+  .status { padding: 8px; }
+}
+
+/* Portrait phones: chapters on top, a thumb row of controls above the home indicator. */
+.reel[data-layout='phone'] .rail {
+  grid-template-columns: 48px auto minmax(0, 1fr) auto;
+  grid-template-areas: 'body body body body' 'play sound . open';
+  row-gap: 6px; column-gap: 8px;
+  padding-top: 6px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+.reel[data-layout='phone'] .rail__play,
+.reel[data-layout='short'] .rail__play { width: 48px; height: 48px; }
+.reel[data-layout='phone'] .reel__open,
+.reel[data-layout='short'] .reel__open { padding: 0 14px; }
+.reel[data-layout='phone'] .reel__open-name,
+.reel[data-layout='phone'] .reel__open-i { display: none; }
+.reel[data-layout='phone'] .aud { gap: 6px; }
+.reel[data-layout='phone'] .aud__chip { padding: 0 12px; gap: 7px; letter-spacing: 0.07em; }
+.reel[data-layout='phone'] .reel__open { letter-spacing: 0.07em; gap: 8px; }
+
+/* Landscape phones: one compact row. */
+.reel[data-layout='short'] .rail {
+  grid-template-columns: 48px auto minmax(0, 1fr) auto;
+  grid-template-areas: 'play sound body open';
+  column-gap: 10px;
+  padding-top: 4px;
+  padding-bottom: max(6px, env(safe-area-inset-bottom));
+}
+.reel[data-layout='short'] .reel__open-name { display: none; }
+.reel[data-layout='short'] .rail__track { height: 18px; }
+
+/* Compact rails: the chapter list scrolls inside itself (never the page),
+   names stay whole and never collide; the active chapter is kept in view. */
+.reel[data-layout='phone'] .rail__chapters,
+.reel[data-layout='short'] .rail__chapters {
+  gap: 4px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+  scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
+  mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 24px), transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 24px), transparent);
+}
+.reel[data-layout='phone'] .rail__chapters::-webkit-scrollbar,
+.reel[data-layout='short'] .rail__chapters::-webkit-scrollbar { display: none; }
+.reel[data-layout='phone'] .rail__chapters li,
+.reel[data-layout='short'] .rail__chapters li { flex: 0 0 auto !important; scroll-snap-align: center; }
+.reel[data-layout='phone'] .rail__chapter,
+.reel[data-layout='short'] .rail__chapter {
+  width: auto; padding: 4px 12px 2px 0; white-space: nowrap; flex-direction: column; gap: 1px; letter-spacing: 0.08em;
+}
+.reel[data-layout='short'] .rail__chapter { min-height: 44px; justify-content: center; }
+
+/* Narrow phones: the music chip keeps its icon and indicator; its name moves to the
+   accessible label and tooltip. "Tap for sound" and the voice state always stay visible. */
+@media (max-width: 360px) {
+  .aud__chip { padding: 0 11px; gap: 7px; }
+  .aud__chip--music .aud__label:not(.aud__label--keep) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .reel[data-layout='phone'] .rail { column-gap: 6px; }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   PHONE STAGE (600 × 900) — portrait phones. Same scenes, recomposed.
+   ═════════════════════════════════════════════════════════════════════════ */
+.stage[data-layout='phone'] .meta { font-size: 16px; }
+.stage[data-layout='phone'] .scene-label { left: 32px; top: 30px; gap: 12px; flex-wrap: wrap; right: 32px; }
+.stage[data-layout='phone'] .scene-label__i { font-size: 17px; }
+.stage[data-layout='phone'] .scene-label__n { font-size: 22px; }
+.stage[data-layout='phone'] .scene-label__d { font-size: 15px; letter-spacing: 0.14em; }
+.stage[data-layout='phone'] .caption { font-size: 24px; }
+/* Opening */
+.stage[data-layout='phone'] .o-block { top: 280px; padding: 0 30px; }
+.stage[data-layout='phone'] .o-name { font-size: 64px; }
+.stage[data-layout='phone'] .o-title { margin-top: 14px; font-size: 16px; letter-spacing: 0.24em; }
+.stage[data-layout='phone'] .o-words { margin-top: 44px; }
+.stage[data-layout='phone'] .o-word { font-size: 22px; }
+.stage[data-layout='phone'] .o-sep { height: 18px; margin: 0 11px; }
+.stage[data-layout='phone'] .o-pov { margin-top: 32px; max-width: 520px; font-size: 25px; }
+/* YouClean */
+.stage[data-layout='phone'] .yc-frags { left: 32px; top: 110px; width: 536px; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.stage[data-layout='phone'] .frag { min-height: 150px; padding: 18px 18px; gap: 8px; }
+.stage[data-layout='phone'] .frag__k { font-size: 13px; }
+.stage[data-layout='phone'] .frag__big { font-size: 30px; }
+.stage[data-layout='phone'] .frag__s { font-size: 15px; }
+.stage[data-layout='phone'] .frag__msg { font-size: 20px; }
+.stage[data-layout='phone'] .frag__row { font-size: 15px; gap: 12px; }
+.stage[data-layout='phone'] .frag__row b { padding-right: 12px; }
+.stage[data-layout='phone'] .yc-cap-a { left: 32px; right: 32px; top: 760px; }
+.stage[data-layout='phone'] .yc-cap-b { left: 32px; right: 32px; top: 612px; }
+.stage[data-layout='phone'] .yc-states { left: 32px; top: 680px; gap: 10px; flex-wrap: wrap; right: 32px; }
+.stage[data-layout='phone'] .yc-state { font-size: 15px; padding: 9px 16px 9px 30px; }
+.stage[data-layout='phone'] .yc-dash { left: 24px; top: 140px; width: 552px; height: 368px; }
+.stage[data-layout='phone'] .yc-mobile { left: 150px; top: 540px; width: 300px; }
+.stage[data-layout='phone'] .yc-metric { top: 300px; }
+.stage[data-layout='phone'] .yc-m-num { top: 34px; font-size: 104px; }
+.stage[data-layout='phone'] .yc-own { left: 40px; top: 240px; }
+.stage[data-layout='phone'] .yc-own-l { font-size: 76px; }
+.stage[data-layout='phone'] .yc-own-cap { margin-top: 30px; max-width: 500px; }
+/* Cornerstone */
+.stage[data-layout='phone'] .cs-chip { font-size: 15px; padding: 10px 15px; }
+.stage[data-layout='phone'] .cs-counter { right: 32px; top: 76px; }
+.stage[data-layout='phone'] .cs-count { font-size: 72px; }
+.stage[data-layout='phone'] .cs-btn { font-size: 24px; padding: 18px 36px; }
+.stage[data-layout='phone'] .cs-one-n { font-size: 220px; }
+.stage[data-layout='phone'] .cs-mins-row { gap: 20px; }
+.stage[data-layout='phone'] .cs-mins-a, .stage[data-layout='phone'] .cs-mins-b { font-size: 72px; }
+.stage[data-layout='phone'] .cs-mins-arrow { width: 56px; }
+.stage[data-layout='phone'] .cs-mins-s { font-size: 19px; }
+.stage[data-layout='phone'] .cs-ai-copy { left: 32px; top: 90px; width: 536px; }
+.stage[data-layout='phone'] .cs-ai-h { margin-top: 12px; font-size: 46px; }
+.stage[data-layout='phone'] .cs-panel { left: 32px; right: auto; top: 270px; width: 536px; padding: 20px 22px 16px; }
+.stage[data-layout='phone'] .cs-field { padding: 9px 0; }
+.stage[data-layout='phone'] .cs-field__text { font-size: 15px; }
+/* Flyin */
+.stage[data-layout='phone'] .fl-city--a { left: 36px; top: 540px; }
+.stage[data-layout='phone'] .fl-city--b { left: 470px; top: 440px; }
+.stage[data-layout='phone'] .fl-search { left: 40px; top: 640px; width: 520px; padding: 18px 20px; gap: 14px; }
+.stage[data-layout='phone'] .fl-search__t { font-size: 24px; }
+.stage[data-layout='phone'] .fl-desk { left: 24px; top: 140px; width: 552px; }
+.stage[data-layout='phone'] .fl-mob { left: 340px; top: 430px; width: 210px; }
+.stage[data-layout='phone'] .fl-hotel { left: 40px; top: 500px; width: 260px; height: 340px; }
+.stage[data-layout='phone'] .fl-statement { left: 36px; right: 36px; top: 360px; font-size: 54px; }
+/* Menopause Care */
+.stage[data-layout='phone'] .cv-map { top: 140px; height: 440px; }
+.stage[data-layout='phone'] .cv-words { top: 640px; gap: 28px; }
+.stage[data-layout='phone'] .cv-words span { font-size: 30px; }
+.stage[data-layout='phone'] .cv-photo { left: 24px; top: 110px; width: 552px; height: 470px; }
+.stage[data-layout='phone'] .cv-photo img { object-position: 92% 40%; }
+.stage[data-layout='phone'] .cv-finalist { left: 32px; top: 612px; gap: 8px; }
+.stage[data-layout='phone'] .cv-f { font-size: 48px; }
+.stage[data-layout='phone'] .cv-line { left: 32px; top: 735px; width: 536px; font-size: 32px; }
+/* Ending */
+.stage[data-layout='phone'] .end-frame { width: 250px; }
+.stage[data-layout='phone'] .end-frame__img { width: 250px; height: 167px; }
+.stage[data-layout='phone'] .end-frame--youclean { left: 40px; top: 170px; }
+.stage[data-layout='phone'] .end-frame--cornerstone { left: 310px; top: 170px; }
+.stage[data-layout='phone'] .end-frame--flyin { left: 40px; top: 470px; }
+.stage[data-layout='phone'] .end-frame--civtech { left: 310px; top: 470px; }
+.stage[data-layout='phone'] .end-thought { left: 32px; right: 32px; top: 210px; }
+.stage[data-layout='phone'] .end-t1 { font-size: 42px; }
+.stage[data-layout='phone'] .end-t2 { margin-top: 30px; font-size: 27px; }
+.stage[data-layout='phone'] .end-sign { top: 320px; padding: 0 24px; }
+.stage[data-layout='phone'] .end-name { font-size: 62px; }
+.stage[data-layout='phone'] .end-title { font-size: 15px; letter-spacing: 0.24em; }
+.stage[data-layout='phone'] .end-cta { margin-top: 40px; font-size: 19px; padding: 18px 30px; }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   SHORT STAGE (1000 × 460) — landscape phones. Same scenes, recomposed wide.
+   ═════════════════════════════════════════════════════════════════════════ */
+.stage[data-layout='short'] .meta { font-size: 16px; }
+.stage[data-layout='short'] .scene-label { left: 40px; top: 22px; gap: 12px; }
+.stage[data-layout='short'] .scene-label__i { font-size: 17px; }
+.stage[data-layout='short'] .scene-label__n { font-size: 22px; }
+.stage[data-layout='short'] .scene-label__d { font-size: 15px; letter-spacing: 0.14em; }
+.stage[data-layout='short'] .caption { font-size: 22px; }
+/* Opening */
+.stage[data-layout='short'] .o-block { top: 96px; }
+.stage[data-layout='short'] .o-name { font-size: 64px; }
+.stage[data-layout='short'] .o-title { margin-top: 10px; font-size: 16px; letter-spacing: 0.24em; }
+.stage[data-layout='short'] .o-words { margin-top: 30px; }
+.stage[data-layout='short'] .o-word { font-size: 21px; }
+.stage[data-layout='short'] .o-sep { height: 18px; margin: 0 14px; }
+.stage[data-layout='short'] .o-pov { margin-top: 22px; max-width: 780px; font-size: 23px; }
+/* YouClean */
+.stage[data-layout='short'] .yc-frags { left: 40px; top: 70px; width: 920px; gap: 14px; }
+.stage[data-layout='short'] .frag { min-height: 128px; padding: 16px 18px; gap: 6px; }
+.stage[data-layout='short'] .frag__k { font-size: 13px; }
+.stage[data-layout='short'] .frag__big { font-size: 28px; }
+.stage[data-layout='short'] .frag__s { font-size: 14px; }
+.stage[data-layout='short'] .frag__msg { font-size: 19px; }
+.stage[data-layout='short'] .frag__row { font-size: 14px; gap: 12px; }
+.stage[data-layout='short'] .frag__row b { padding-right: 12px; }
+.stage[data-layout='short'] .yc-cap-a { left: 40px; top: 400px; }
+.stage[data-layout='short'] .yc-cap-b { left: 40px; top: 356px; }
+.stage[data-layout='short'] .yc-states { left: 40px; top: 400px; gap: 10px; }
+.stage[data-layout='short'] .yc-state { font-size: 15px; padding: 8px 16px 8px 30px; }
+.stage[data-layout='short'] .yc-dash { left: 70px; top: 50px; width: 540px; height: 360px; }
+.stage[data-layout='short'] .yc-mobile { left: 650px; top: 80px; width: 300px; }
+.stage[data-layout='short'] .yc-metric { top: 90px; height: 240px; }
+.stage[data-layout='short'] .yc-m-num { top: 34px; font-size: 136px; }
+.stage[data-layout='short'] .yc-own { left: 60px; top: 60px; }
+.stage[data-layout='short'] .yc-own-l { font-size: 84px; }
+.stage[data-layout='short'] .yc-own-cap { margin-top: 22px; }
+/* Cornerstone */
+.stage[data-layout='short'] .cs-chip { font-size: 14px; padding: 9px 14px; }
+.stage[data-layout='short'] .cs-counter { right: 40px; top: 18px; }
+.stage[data-layout='short'] .cs-count { font-size: 56px; }
+.stage[data-layout='short'] .cs-btn { font-size: 22px; padding: 16px 32px; }
+.stage[data-layout='short'] .cs-one-n { font-size: 190px; }
+.stage[data-layout='short'] .cs-mins-a, .stage[data-layout='short'] .cs-mins-b { font-size: 104px; }
+.stage[data-layout='short'] .cs-mins-arrow { width: 90px; }
+.stage[data-layout='short'] .cs-mins-l { margin-top: 18px; }
+.stage[data-layout='short'] .cs-mins-s { font-size: 18px; }
+.stage[data-layout='short'] .cs-ai-copy { left: 40px; top: 130px; width: 360px; }
+.stage[data-layout='short'] .cs-ai-h { margin-top: 12px; font-size: 48px; }
+.stage[data-layout='short'] .cs-panel { right: 40px; top: 58px; width: 600px; padding: 10px 18px 6px; border-radius: 14px; }
+.stage[data-layout='short'] .cs-panel__head { font-size: 16px; padding-bottom: 4px; }
+.stage[data-layout='short'] .cs-field { padding: 3px 0; }
+.stage[data-layout='short'] .cs-field__top { margin-bottom: 2px; }
+.stage[data-layout='short'] .cs-field__k { font-size: 13px; }
+.stage[data-layout='short'] .cs-field__added { font-size: 12px; padding: 2px 9px; }
+.stage[data-layout='short'] .cs-field__v { min-height: 26px; padding: 4px 10px; }
+.stage[data-layout='short'] .cs-field__text { font-size: 13px; line-height: 1.25; }
+.stage[data-layout='short'] .cs-panel__foot { margin-top: 3px; font-size: 11.5px; }
+/* Flyin */
+.stage[data-layout='short'] .fl-city--a { left: 60px; top: 342px; }
+.stage[data-layout='short'] .fl-city--b { left: 860px; top: 290px; }
+.stage[data-layout='short'] .fl-search { left: 320px; top: 356px; width: 360px; padding: 14px 18px; gap: 12px; }
+.stage[data-layout='short'] .fl-search__t { font-size: 21px; }
+.stage[data-layout='short'] .fl-search__caret { height: 24px; }
+.stage[data-layout='short'] .fl-desk { left: 270px; top: 40px; width: 500px; }
+.stage[data-layout='short'] .fl-mob { left: 790px; top: 80px; width: 160px; }
+.stage[data-layout='short'] .fl-hotel { left: 50px; top: 70px; width: 190px; height: 320px; }
+.stage[data-layout='short'] .fl-statement { left: 100px; right: 100px; top: 150px; font-size: 58px; }
+/* Menopause Care */
+.stage[data-layout='short'] .cv-map { top: 56px; height: 300px; }
+.stage[data-layout='short'] .cv-map img { width: 1250px; height: auto; }
+.stage[data-layout='short'] .cv-words { top: 376px; gap: 70px; }
+.stage[data-layout='short'] .cv-words span { font-size: 30px; }
+.stage[data-layout='short'] .cv-photo { left: 470px; top: 24px; width: 490px; height: 410px; }
+.stage[data-layout='short'] .cv-finalist { left: 40px; top: 100px; gap: 8px; }
+.stage[data-layout='short'] .cv-f { font-size: 46px; }
+.stage[data-layout='short'] .cv-line { left: 40px; top: 210px; width: 390px; font-size: 30px; }
+/* Ending */
+.stage[data-layout='short'] .end-frame { width: 220px; }
+.stage[data-layout='short'] .end-frame__img { width: 220px; height: 147px; }
+.stage[data-layout='short'] .end-frame__n { margin-top: 8px; }
+.stage[data-layout='short'] .end-frame--youclean { left: 240px; top: 30px; }
+.stage[data-layout='short'] .end-frame--cornerstone { left: 540px; top: 30px; }
+.stage[data-layout='short'] .end-frame--flyin { left: 240px; top: 240px; }
+.stage[data-layout='short'] .end-frame--civtech { left: 540px; top: 240px; }
+.stage[data-layout='short'] .end-thought { left: 70px; right: 70px; top: 70px; }
+.stage[data-layout='short'] .end-t1 { font-size: 40px; }
+.stage[data-layout='short'] .end-t2 { margin-top: 22px; font-size: 25px; max-width: 860px; }
+.stage[data-layout='short'] .end-sign { top: 90px; }
+.stage[data-layout='short'] .end-name { font-size: 64px; }
+.stage[data-layout='short'] .end-title { margin-top: 10px; font-size: 15px; letter-spacing: 0.24em; }
+.stage[data-layout='short'] .end-cta { margin-top: 30px; font-size: 19px; padding: 16px 30px; }
+.stage[data-layout='phone'] .o-stop, .stage[data-layout='phone'] .end-stop { margin-left: 0.14em; }
+
+/* Compact phones (shorter screens): same phone composition on a 600 × 740 stage. */
+@media (orientation: portrait) and (max-height: 700px) {
+  :root { --topbar: 52px; }
+  .reel[data-layout='phone'] .rail { row-gap: 4px; padding-top: 2px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  .reel[data-layout='phone'] .rail__track { height: 18px; }
+  .reel[data-layout='phone'] .rail__chapter { min-height: 44px; }
+}
+@media (max-width: 360px) {
+  .reel[data-layout='phone'] .reel__open-n { display: none; }
+  .reel[data-layout='phone'] .reel__open { width: 48px; padding: 0; justify-content: center; }
+}
+.stage[data-layout='phone'][data-compact] .o-block { top: 200px; }
+.stage[data-layout='phone'][data-compact] .yc-frags { top: 96px; }
+.stage[data-layout='phone'][data-compact] .frag { min-height: 120px; padding: 14px 16px; }
+.stage[data-layout='phone'][data-compact] .yc-cap-b { top: 500px; }
+.stage[data-layout='phone'][data-compact] .yc-states { top: 560px; }
+.stage[data-layout='phone'][data-compact] .yc-cap-a { top: 640px; }
+.stage[data-layout='phone'][data-compact] .yc-dash { top: 110px; }
+.stage[data-layout='phone'][data-compact] .yc-mobile { left: 185px; top: 492px; width: 230px; }
+.stage[data-layout='phone'][data-compact] .yc-metric { top: 220px; }
+.stage[data-layout='phone'][data-compact] .yc-own { top: 170px; }
+.stage[data-layout='phone'][data-compact] .cs-ai-copy { top: 78px; }
+.stage[data-layout='phone'][data-compact] .cs-ai-h { font-size: 40px; }
+.stage[data-layout='phone'][data-compact] .cs-panel { top: 214px; padding: 16px 20px 12px; }
+.stage[data-layout='phone'][data-compact] .cs-panel__head { padding-bottom: 8px; }
+.stage[data-layout='phone'][data-compact] .cs-field { padding: 6px 0; }
+.stage[data-layout='phone'][data-compact] .cs-field__top { margin-bottom: 5px; }
+.stage[data-layout='phone'][data-compact] .cs-field__v { min-height: 36px; padding: 8px 12px; }
+.stage[data-layout='phone'][data-compact] .cs-field__text { font-size: 14px; line-height: 1.3; }
+.stage[data-layout='phone'][data-compact] .cs-panel__foot { margin-top: 6px; }
+.stage[data-layout='phone'][data-compact] .fl-city--a { top: 520px; }
+.stage[data-layout='phone'][data-compact] .fl-search { top: 610px; }
+.stage[data-layout='phone'][data-compact] .fl-desk { top: 110px; }
+.stage[data-layout='phone'][data-compact] .fl-mob { left: 370px; top: 390px; width: 170px; }
+.stage[data-layout='phone'][data-compact] .fl-hotel { top: 420px; height: 300px; }
+.stage[data-layout='phone'][data-compact] .fl-statement { top: 290px; }
+.stage[data-layout='phone'][data-compact] .cv-map { top: 110px; height: 380px; }
+.stage[data-layout='phone'][data-compact] .cv-words { top: 540px; }
+.stage[data-layout='phone'][data-compact] .cv-photo { top: 100px; height: 390px; }
+.stage[data-layout='phone'][data-compact] .cv-finalist { top: 512px; }
+.stage[data-layout='phone'][data-compact] .cv-line { top: 628px; }
+.stage[data-layout='phone'][data-compact] .end-frame--youclean, .stage[data-layout='phone'][data-compact] .end-frame--cornerstone { top: 130px; }
+.stage[data-layout='phone'][data-compact] .end-frame--flyin, .stage[data-layout='phone'][data-compact] .end-frame--civtech { top: 400px; }
+.stage[data-layout='phone'][data-compact] .end-thought { top: 150px; }
+.stage[data-layout='phone'][data-compact] .end-sign { top: 250px; }
