@@ -1,0 +1,18 @@
+{
+  "_readme": "The reel's voiceover. Each line starts at a timeline mark (see reel-timing.json). Parts are spoken in order with the given pause after each (seconds) and speaking rate (words per minute, used only by the placeholder TTS). A recorded voice should follow the same starting marks.",
+  "voice": "Tara",
+  "lines": [
+    { "mark": "voIntro", "parts": [["Namaskaram,", 0.5, 148], ["I'm Vimala Banavath,", 0.28, 156], ["a Senior Product Designer.", 0, 150]] },
+    { "mark": "voWhat", "parts": [["I design digital products across AI, enterprise, and real-world operations,", 0.55, 160], ["turning complex problems into experiences people can actually use.", 0, 152]] },
+    { "mark": "voSystem", "parts": [["Sometimes, that means designing the system.", 0, 150]] },
+    { "mark": "voBuild", "parts": [["And sometimes,", 0.32, 150], ["building it myself.", 0, 144]] },
+    { "mark": "voEnterprise", "parts": [["For enterprise products,", 0.3, 160], ["I focus on making complexity clearer, faster, and easier to navigate.", 0, 156]] },
+    { "mark": "voConsumer", "parts": [["I've also worked on consumer experiences,", 0.18, 164], ["where every interaction needs to feel effortless.", 0, 154]] },
+    { "mark": "voAmbiguity", "parts": [["And some projects start with ambiguity.", 0.5, 150], ["Understanding people first,", 0.3, 156], ["then designing the experience around what they actually need.", 0, 152]] },
+    { "mark": "voBelief", "parts": [["For me, good product design starts before the screen.", 0, 148]] },
+    { "mark": "voHow1", "parts": [["It's about understanding the system,", 0, 156]] },
+    { "mark": "voHow2", "parts": [["making complexity easier to navigate,", 0, 156]] },
+    { "mark": "voHow3", "parts": [["and building experiences people can trust.", 0, 148]] },
+    { "mark": "voIdentity", "parts": [["I'm Vimala Banavath.", 0.6, 150], ["Senior Product Designer.", 0, 144]] }
+  ]
+}

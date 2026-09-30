@@ -1,0 +1,15 @@
+{
+  "name": "Vimala Banavath · Showreel",
+  "short_name": "Vimala · Reel",
+  "description": "Portfolio companion for DesignUp 2026.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#17160f",
+  "theme_color": "#17160f",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "_readme": "Swap any file below for a licensed/recorded one (mp3, m4a/aac or wav all work) and update the filename here. Tracks start at showreel time 0; use 'offset' (seconds) if your file has a lead-in (positive = skip into the file). Volumes are 0–1.",
+  "music": {
+    "file": "music-showreel.m4a",
+    "volume": 0.5,
+    "offset": 0
+  },
+  "voiceover": {
+    "file": "voiceover.m4a",
+    "volume": 1.0,
+    "offset": 0,
+    "duckMusicTo": 0.38
+  },
+  "sfx": {
+    "volume": 0.42,
+    "files": {
+      "texture": "sfx-texture.m4a",
+      "transform": "sfx-transform.m4a",
+      "transition": "sfx-transition.m4a",
+      "accent": "sfx-accent.m4a",
+      "compression": "sfx-compression.m4a",
+      "tonal": "sfx-tonal.m4a",
+      "air": "sfx-air.m4a"
+    }
+  }
+}
