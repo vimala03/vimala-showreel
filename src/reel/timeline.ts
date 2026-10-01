@@ -1,14 +1,16 @@
 import { gsap } from 'gsap'
 import { CustomEase } from 'gsap/CustomEase'
 import { CS_CHIPS, type Layout } from './Scenes'
+import { LAYERS, NAMED } from '../content/career'
 
 gsap.registerPlugin(CustomEase)
 
 // The portfolio's own easing curve (v3.css: cubic-bezier(0.2, 0.7, 0.2, 1)).
 const STUDIO = CustomEase.create('studio', 'M0,0 C0.2,0.7 0.2,1 1,1')
 
-export type ChapterId = 'open' | 'youclean' | 'cornerstone' | 'flyin' | 'civtech' | 'end'
-export type Chapter = { id: ChapterId; start: number; end: number; key: number }
+export type ChapterId = 'open' | 'youclean' | 'cornerstone' | 'flyin' | 'civtech' | 'career' | 'end'
+/** `steps`: settled frames a reduced-motion viewer steps through inside a long chapter. */
+export type Chapter = { id: ChapterId; start: number; end: number; key: number; steps?: number[] }
 /** Sound-design one-shots, fired by the audio engine when playback passes them. */
 export type CueId = 'texture' | 'transform' | 'transition' | 'accent' | 'compression' | 'tonal' | 'air'
 export type Cue = { id: CueId; t: number; gain?: number }
@@ -458,6 +460,375 @@ export function buildReel(stage: HTMLElement, layout: Layout, dims: [number, num
     tl.to(q('.s-cv'), { autoAlpha: 0, duration: 1.1, ease: 'sine.inOut' }, E)
     chapters.push({ id: 'civtech', start: S, end: E + 1.0, key: P + 4.8 })
     T = E + 1.0
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // 05 CAREER INTELLIGENCE: a question → the model → the system → the first
+  // working experiment → what it refuses to claim → the system again → 2030.
+  // ════════════════════════════════════════════════════════════════════════
+  {
+    const S = T
+    const deg = Math.PI / 180
+    // Reading rows sit together on the roomy stages; on phones they replace each other.
+    const stacked = layout === 'land' || layout === 'port'
+    const rowWise = layout === 'land' || layout === 'short'
+    const hubs = qa('.ci-hub')
+    const nodes = qa('.ci-node')
+    const spokes = qa<SVGPathElement>('.ci-spoke')
+    const twigs = qa<SVGPathElement>('.ci-twig')
+    const conv = qa<SVGPathElement>('.ci-conv')
+    const gapline = q<SVGPathElement>('.ci-gapline')
+    const eco = q('.ci-eco')
+    q<SVGSVGElement>('.ci-svg').setAttribute('viewBox', `0 0 ${W} ${H}`)
+    q<SVGSVGElement>('.ci-eco-svg').setAttribute('viewBox', `0 0 ${W} ${H}`)
+
+    // ── Layout: fragments, the ecosystem, the convergence lines (measured first). ─
+    const fragPos = {
+      land: [[0.15, 0.26], [0.43, 0.18], [0.73, 0.22], [0.88, 0.44], [0.83, 0.76], [0.56, 0.84], [0.24, 0.8], [0.1, 0.54]],
+      port: [[0.22, 0.16], [0.7, 0.13], [0.84, 0.32], [0.18, 0.35], [0.82, 0.68], [0.2, 0.7], [0.64, 0.87], [0.3, 0.9]],
+      phone: [[0.25, 0.19], [0.72, 0.16], [0.76, 0.33], [0.24, 0.36], [0.76, 0.69], [0.24, 0.72], [0.68, 0.87], [0.3, 0.9]],
+      short: [[0.13, 0.32], [0.38, 0.22], [0.64, 0.24], [0.88, 0.36], [0.87, 0.8], [0.6, 0.86], [0.33, 0.84], [0.1, 0.72]],
+    }[layout].map(([fx, fy]) => [fx * W, fy * H])
+    const frags = qa('.ci-frag')
+    frags.forEach((f, i) => gsap.set(f, { left: fragPos[i][0], top: fragPos[i][1], xPercent: -50, yPercent: -50 }))
+    const pairs = [[0, 1], [1, 2], [2, 3], [4, 5], [5, 6], [7, 0]]
+    const links = qa<SVGPathElement>('.ci-frag-link')
+    links.forEach((l, k) => {
+      const [a, z] = pairs[k]
+      l.setAttribute('d', `M ${fragPos[a][0]} ${fragPos[a][1]} L ${fragPos[z][0]} ${fragPos[z][1]}`)
+    })
+
+    // The wide stage: six hubs on an ellipse, each layer's surfaces hanging off its
+    // hub as an aligned column. Every other stage: the same six layers as a
+    // structured grid, surfaces listed under each hub. Labels never collide.
+    const grid = layout !== 'land'
+    const compactPhone = layout === 'phone' && H < 800
+    const surfXY: { x: number; y: number }[] = []
+    let cx: number, cy: number
+    if (grid) {
+      const g = {
+        port: { core: [W / 2, 236], cols: [150, 560], rows: [400, 740, 1080], row: 36, dx: 34, dy: 50 },
+        phone: { core: [W / 2, compactPhone ? 134 : 136], cols: [44, 324], rows: compactPhone ? [196, 366, 536] : [220, 420, 620], row: compactPhone ? 22 : 26, dx: 26, dy: compactPhone ? 32 : 36 },
+        short: { core: [150, 250], cols: [300, 530, 760], rows: [92, 280], row: 20, dx: 24, dy: 30 },
+      }[layout as 'port' | 'phone' | 'short']
+      ;[cx, cy] = g.core
+      LAYERS.forEach((L, li) => {
+        const hx = g.cols[li % g.cols.length]
+        const hy = g.rows[Math.floor(li / g.cols.length)]
+        hubs[li].dataset.side = 'r'
+        gsap.set(hubs[li], { left: hx, top: hy })
+        spokes[li].setAttribute('d', '')
+        L.surfaces.forEach((_, j) => {
+          const x = hx + g.dx
+          const y = hy + g.dy + j * g.row
+          const k = surfXY.length
+          nodes[k].dataset.side = 'r'
+          gsap.set(nodes[k], { left: x, top: y })
+          twigs[k].setAttribute('d', `M ${hx} ${hy + 12} L ${hx} ${y} L ${x - 8} ${y}`)
+          surfXY.push({ x, y })
+        })
+      })
+    } else {
+      const geo = { c: [0.5, 0.52], r: [0.29, 0.3], core: 165, col: 70, row: 30, shift: 70, vx: 60, vy: 40 }
+      cx = geo.c[0] * W
+      cy = geo.c[1] * H
+      const hubXY = LAYERS.map((_, i) => {
+        const a = (-90 + 60 * i) * deg
+        return { vertical: Math.abs(Math.cos(a)) < 0.3, up: Math.sin(a) < 0, right: Math.cos(a) > 0, x: cx + geo.r[0] * W * Math.cos(a), y: cy + geo.r[1] * H * Math.sin(a) }
+      })
+      hubs.forEach((h, i) => {
+        const { vertical, up, x, y } = hubXY[i]
+        // Labels sit between hub and core (top/bottom hubs) or above/below (side hubs).
+        h.dataset.side = up ? 'b' : 't'
+        gsap.set(h, { left: x, top: y })
+        const d = Math.hypot(x - cx, y - cy)
+        const [ux, uy] = [(x - cx) / d, (y - cy) / d]
+        const stop = vertical ? 52 : 14
+        spokes[i].setAttribute('d', `M ${cx + ux * geo.core} ${cy + uy * geo.core} L ${x - ux * stop} ${y - uy * stop}`)
+      })
+      LAYERS.forEach((L, li) => {
+        const { vertical, up, right, x: hx, y: hy } = hubXY[li]
+        const n = L.surfaces.length
+        const rows = Math.ceil(n / 2)
+        L.surfaces.forEach((_, j) => {
+          let x: number, y: number, side: string
+          if (vertical) {
+            // Two short columns either side of the hub, growing away from the core.
+            const leftCol = j < rows
+            const r = leftCol ? j : j - rows
+            x = hx + (leftCol ? -geo.vx : geo.vx)
+            y = hy + (up ? -1 : 1) * (geo.vy + r * geo.row)
+            side = leftCol ? 'l' : 'r'
+          } else {
+            const out = right ? 1 : -1
+            x = hx + out * geo.col
+            y = hy + (up ? -1 : 1) * geo.shift + (j - (n - 1) / 2) * geo.row
+            side = out > 0 ? 'r' : 'l'
+          }
+          const k = surfXY.length
+          nodes[k].dataset.side = side
+          gsap.set(nodes[k], { left: x, top: y })
+          twigs[k].setAttribute('d', `M ${hx + (x - hx) * 0.12} ${hy + (y - hy) * 0.12} L ${x - (x - hx) * 0.06} ${y - (y - hy) * 0.06}`)
+          surfXY.push({ x, y })
+        })
+      })
+    }
+    gsap.set(q('.ci-core'), { left: cx, top: cy })
+    // Keep every above/below hub label inside the stage.
+    hubs.forEach((h) => {
+      if (h.dataset.side !== 't' && h.dataset.side !== 'b') return
+      const l = h.querySelector<HTMLElement>('.ci-hub-l')!
+      const x = parseFloat(h.style.left)
+      const w = l.offsetWidth
+      gsap.set(l, { left: Math.min(W - 16 - w, Math.max(16, x - w / 2)) - x, xPercent: 0, x: 0 })
+    })
+
+    const mn = qa('.ci-model-n').map((n) => b(n))
+    const exA = qa('.ci-row--a .ci-ex').map((e) => b(e))
+    const exB = b('.ci-row--b .ci-ex')
+    const knotA = b('.ci-row--a .ci-knot')
+    const knotB = b('.ci-row--b .ci-knot')
+    conv.forEach((p, i) => {
+      const e = exA[i]
+      if (rowWise) {
+        const sx = e.x + e.w + 14
+        const kx = knotA.cx - 7
+        const mx = (sx + kx) / 2
+        p.setAttribute('d', `M ${sx} ${e.cy} C ${mx} ${e.cy}, ${mx} ${knotA.cy}, ${kx} ${knotA.cy}`)
+      } else {
+        const sx = e.x - 8
+        const kx = knotA.cx
+        p.setAttribute('d', `M ${sx} ${e.cy} C ${kx} ${e.cy}, ${kx} ${e.cy}, ${kx} ${Math.min(knotA.cy - 7, e.cy + 28)} L ${kx} ${knotA.cy - 7}`)
+      }
+    })
+    gapline.setAttribute('d', rowWise
+      ? `M ${exB.x + exB.w + 14} ${knotB.cy} L ${knotB.cx - 8} ${knotB.cy}`
+      : `M ${knotB.cx} ${exB.y + exB.h + 6} L ${knotB.cx} ${knotB.cy - 9}`)
+
+    show('.s-ci', S)
+    tl.set(sig, { backgroundColor: ACCENT, autoAlpha: 0 }, S)
+
+    // 1 · The question, alone. The signal holds the stage until it is asked.
+    tl.set(sig, { x: W / 2, y: H / 2, scale: 0 }, S)
+    tl.to(sig, { autoAlpha: 1, scale: 1, duration: 0.8, ease: 'back.out(2.4)' }, S + 0.3)
+    tl.to(sig, { scale: 1.5, duration: 0.5, ease: 'sine.inOut', yoyo: true, repeat: 1 }, S + 1.3)
+    tl.to(sig, { autoAlpha: 0, scale: 0.4, duration: 0.5 }, S + 2.5)
+    tl.set(q('.ci-q'), { autoAlpha: 1, y: 0 }, S)
+    tl.fromTo(qa('.ci-q-t .split__w'), { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: 0.9, stagger: 0.1 }, S + 2.8)
+    tl.fromTo(q('.ci-q-n'), { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: 1.0 }, S + 4.4)
+    labelIn('.s-ci', S + 4.7)
+    cue('texture', S + 0.2, 0.8)
+    marks.ciQuestion = S + 2.8
+    marks.voQuestion = S + 0.5   // "I started with a simple question." … "What if your career could understand itself?"
+    tl.to(q('.ci-q'), { autoAlpha: 0, y: -20, duration: 0.5, ease: 'power2.in' }, S + 6.6)
+
+    // 2 · Fragmentation: everywhere, and disconnected.
+    const F = S + 7.1
+    marks.ciFrags = F
+    marks.voScattered = F + 0.2  // "Today, our professional story is scattered across…"
+    tl.set([q('.ci-frags'), q('.ci-caps')], { autoAlpha: 1 }, F)
+    frags.forEach((f, i) => {
+      const at = F + i * 0.12
+      tl.fromTo(f, { autoAlpha: 0, scale: 0.9, y: 14 }, { autoAlpha: 0.9, scale: 1, y: 0, duration: 0.8 }, at)
+      tl.to(f, { x: i % 2 ? -14 : 14, y: i % 3 ? 10 : -10, duration: 4.6, ease: 'sine.inOut' }, at + 0.8)
+    })
+    tl.fromTo(q('.ci-cap-a'), { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.9 }, F + 0.5)
+    // Connections are attempted, and don't hold.
+    links.forEach((l, k) => {
+      const len = l.getTotalLength()
+      tl.fromTo(l, { strokeDasharray: len, strokeDashoffset: len, autoAlpha: 1 }, { strokeDashoffset: len * 0.45, duration: 1.0, ease: 'power2.out' }, F + 3.0 + k * 0.1)
+      tl.to(l, { autoAlpha: 0, duration: 0.6 }, F + 4.7)
+    })
+    tl.fromTo(q('.ci-cap-b'), { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.9 }, F + 3.6)
+    tl.to(q('.ci-caps'), { autoAlpha: 0, duration: 0.4 }, F + 6.3)
+    // Everything collapses into the first step of the model.
+    frags.forEach((f, i) => tl.to(f, { x: mn[0].cx - fragPos[i][0], y: mn[0].cy - fragPos[i][1], scale: 0.4, autoAlpha: 0, duration: 0.8, ease: 'expo.in' }, F + 6.4 + (i % 4) * 0.03))
+    cue('transform', F + 6.5)
+    hide('.ci-frags', F + 7.4)
+
+    // 3 · The model: experience → evidence → capability → opportunity → career signal.
+    const Y = F + 7.0
+    marks.ciModel = Y
+    marks.voModel = Y + 0.2      // "Career Intelligence explores a different model…"
+    tl.set(q('.ci-model'), { autoAlpha: 1 }, Y - 0.1)
+    const names = qa('.ci-model-n')
+    const arrows = qa('.ci-model-arrow')
+    const nodeAt = [0.2, 3.2, 4.3, 6.2, 7.6] // as each word is spoken
+    const railX = Math.min(...mn.map((n) => n.x)) - 30
+    const sigAt = (i: number) => (rowWise ? { x: mn[i].cx, y: mn[i].y + mn[i].h + 18 } : { x: railX, y: mn[i].cy })
+    names.forEach((n, i) => {
+      const at = Y + nodeAt[i]
+      if (i > 0) tl.fromTo(arrows[i - 1], rowWise ? { scaleX: 0 } : { scaleY: 0 }, { ...(rowWise ? { scaleX: 1 } : { scaleY: 1 }), duration: 0.5, ease: 'power2.inOut' }, at - 0.45)
+      tl.fromTo(n, { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.6 }, at)
+      if (i > 0) sigTo(sigAt(i).x, sigAt(i).y, at - 0.5, 0.6, 'power2.inOut')
+    })
+    tl.set(sig, { ...sigAt(0), scale: 0.5, autoAlpha: 0 }, Y)
+    tl.to(sig, { autoAlpha: 1, duration: 0.3 }, Y + nodeAt[0])
+    tl.to(sig, { scale: 0.9, duration: 0.4, ease: 'back.out(3)' }, Y + nodeAt[4] + 0.1)
+    tl.to([q('.ci-model'), sig], { autoAlpha: 0, duration: 0.6, ease: 'power2.in' }, Y + 9.2)
+    tl.set(q('.ci-doc'), { autoAlpha: 1, y: 0 }, Y + 9.6)
+    tl.fromTo(q('.ci-doc-a'), { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.9 }, Y + 9.8)
+    tl.fromTo(q('.ci-doc-b'), { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.9 }, Y + 11.3)
+    tl.to(q('.ci-doc'), { autoAlpha: 0, y: -16, duration: 0.5, ease: 'power2.in' }, Y + 13.2)
+
+    // 4 · The scale: six intelligence layers, every surface, one cluster at a time.
+    const E = Y + 13.6
+    marks.ciLayers = E
+    marks.voLayers = E + 0.4     // "I explored it as one system…"
+    tl.set(eco, { autoAlpha: 1, x: 0, y: 0, scale: 1 }, E)
+    tl.fromTo(q('.ci-core-v--layers'), { autoAlpha: 0, scale: 0.9 }, { autoAlpha: 1, scale: 1, duration: 0.8 }, E + 0.3)
+    spokes.forEach((p, i) => {
+      const len = p.getTotalLength()
+      tl.fromTo(p, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: 0.7, ease: 'power2.out' }, E + 0.4 + i * 0.08)
+    })
+    tl.fromTo(hubs, { autoAlpha: 0, scale: 0.4 }, { autoAlpha: 1, scale: 1, duration: 0.5, stagger: 0.1, ease: 'back.out(2)' }, E + 0.6)
+    cue('transform', E + 0.4, 0.8)
+    let k0 = 0
+    LAYERS.forEach((L, li) => {
+      const at = E + 2.0 + li * 1.1
+      const ns = nodes.slice(k0, k0 + L.surfaces.length)
+      const labels = ns.map((n) => n.querySelector('.ci-node-l')!)
+      const dot = hubs[li].querySelector('.ci-hub-dot')!
+      tl.to(dot, { scale: 1.35, duration: 0.3 }, at)
+      tl.to(dot, { scale: 1, duration: 0.4 }, at + 1.0)
+      tl.fromTo(twigs.slice(k0, k0 + L.surfaces.length), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.4, stagger: 0.04 }, at)
+      tl.fromTo(ns, { autoAlpha: 0, scale: 0 }, { autoAlpha: 1, scale: 1, duration: 0.35, stagger: 0.05, ease: 'back.out(2.5)' }, at + 0.1)
+      tl.fromTo(labels, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, stagger: 0.05 }, at + 0.2)
+      tl.to(labels, { autoAlpha: 0, duration: 0.35 }, at + 1.05)
+      k0 += L.surfaces.length
+    })
+    tl.to(q('.ci-core-v--layers'), { autoAlpha: 0, duration: 0.4 }, E + 5.0)
+    tl.fromTo(q('.ci-core-v--surfaces'), { autoAlpha: 0, scale: 0.9 }, { autoAlpha: 1, scale: 1, duration: 0.7 }, E + 5.3)
+    // Two of them exist today.
+    const built = nodes.filter((n) => n.dataset.status === 'built')
+    tl.fromTo(q('.ci-legend'), { autoAlpha: 0, y: -6 }, { autoAlpha: 1, y: 0, duration: 0.7 }, E + 8.8)
+    tl.to(built.map((n) => n.querySelector('.ci-node-dot')), { scale: 1.9, duration: 0.45, yoyo: true, repeat: 1, ease: 'sine.inOut' }, E + 9.2)
+    tl.to(built.map((n) => n.querySelector('.ci-node-l')), { autoAlpha: 1, duration: 0.4 }, E + 9.2)
+    marks.voBuilt = E + 8.9       // "Two of them are working today."
+
+    // 5 · The first experiment: zoom into Portfolio Intelligence.
+    const Z = E + 11.0
+    marks.ciZoom = Z
+    marks.voFirst = Z + 0.5      // "The first working experiment is narrower…"
+    const pi = nodes.find((n) => n.dataset.name === 'Portfolio Intelligence')!
+    const piXY = surfXY[nodes.indexOf(pi)]
+    // Centre the dot and its label together, as large as the stage allows.
+    const piW = 18 + pi.querySelector<HTMLElement>('.ci-node-l')!.offsetWidth
+    const zs = Math.min(2.6, (W - 64) / piW)
+    const piDir = pi.dataset.side === 'l' ? -1 : 1
+    const zoomPI = { scale: zs, x: W / 2 - piDir * (zs * piW) / 2 - zs * piXY.x, y: H / 2 - zs * piXY.y }
+    const rest = [...hubs, ...nodes.filter((n) => n !== pi), q('.ci-core'), ...spokes, ...twigs]
+    tl.to([...rest, q('.ci-legend')], { autoAlpha: 0, duration: 0.6 }, Z)
+    tl.to(eco, { ...zoomPI, duration: 1.3, ease: 'expo.inOut' }, Z + 0.1)
+    cue('compression', Z + 0.95, 0.8)
+    tl.to(eco, { autoAlpha: 0, duration: 0.5 }, Z + 1.7)
+    tl.set(q('.ci-first'), { autoAlpha: 1 }, Z + 1.8)
+    tl.fromTo(q('.ci-first-t'), { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.9 }, Z + 1.9)
+    tl.fromTo(q('.ci-shot--hero'), { autoAlpha: 0, y: 50 }, { autoAlpha: 1, y: 0, duration: 1.0 }, Z + 3.1)
+    tl.to(q('.ci-first'), { autoAlpha: 0, duration: 0.5, ease: 'power2.in' }, Z + 6.6)
+
+    // 6 · Claim → evidence → signal; the gap; the next move.
+    const R = Z + 7.0
+    marks.ciRead = R
+    marks.voRead = R + 0.3       // "It reads a claim against the evidence…"
+    tl.set(q('.ci-read'), { autoAlpha: 1 }, R)
+    tl.set(q('.ci-row--a'), { autoAlpha: 1 }, R)
+    tl.fromTo(q('.ci-row--a .ci-claim'), { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.8 }, R + 0.1)
+    tl.fromTo(qa('.ci-row--a .ci-ex'), { autoAlpha: 0, x: -14 }, { autoAlpha: 1, x: 0, duration: 0.7, stagger: 0.32 }, R + 0.9)
+    conv.forEach((p, i) => {
+      const len = p.getTotalLength()
+      tl.fromTo(p, { strokeDasharray: len, strokeDashoffset: len, autoAlpha: 1 }, { strokeDashoffset: 0, duration: 0.9, ease: 'power2.inOut' }, R + 2.9 + i * 0.12)
+    })
+    tl.fromTo(q('.ci-row--a .ci-knot'), { scale: 0 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' }, R + 3.9)
+    tl.fromTo(q('.ci-row--a .ci-out'), { autoAlpha: 0, x: 16 }, { autoAlpha: 1, x: 0, duration: 0.8 }, R + 4.0)
+    cue('transition', R + 4.0)
+    const G0 = R + 5.3
+    if (!stacked) tl.to([q('.ci-row--a'), ...conv], { autoAlpha: 0, duration: 0.45, ease: 'power2.in' }, G0 - 0.5)
+    tl.fromTo(q('.ci-row--b'), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.4 }, G0 - 0.1)
+    tl.fromTo(q('.ci-row--b .ci-claim'), { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.8 }, G0)
+    tl.fromTo(q('.ci-row--b .ci-ex'), { autoAlpha: 0, x: -14 }, { autoAlpha: 1, x: 0, duration: 0.7 }, G0 + 0.4)
+    tl.fromTo(gapline, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.6 }, G0 + 0.9)
+    tl.fromTo(q('.ci-row--b .ci-out'), { autoAlpha: 0, x: 16 }, { autoAlpha: 1, x: 0, duration: 0.8 }, G0 + 1.1)
+    tl.fromTo(q('.ci-next'), { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: 0.8 }, R + 7.4)
+    tl.to([q('.ci-read'), ...conv, gapline], { autoAlpha: 0, duration: 0.5, ease: 'power2.in' }, R + 10.4)
+    // The same reading, in the working prototype.
+    const P = R + 10.9
+    tl.set(q('.ci-proof'), { autoAlpha: 1 }, P)
+    tl.fromTo(q('.ci-shot--read'), { autoAlpha: 0, scale: 0.96 }, { autoAlpha: 1, scale: 1, duration: 1.0 }, P)
+    tl.fromTo(q('.ci-proof-l'), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.6 }, P + 0.6)
+    tl.to(q('.ci-proof'), { autoAlpha: 0, duration: 0.5, ease: 'power2.in' }, P + 2.7)
+
+    // 7 · Attention Intelligence: observed, interpreted, never claimed.
+    const A = P + 3.2
+    marks.ciAttention = A
+    marks.voSend = A + 0.3       // "Then, what happens after you press send?"
+    tl.set(q('.ci-att'), { autoAlpha: 1 }, A)
+    tl.fromTo(q('.ci-sample'), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.6 }, A + 0.1)
+    tl.fromTo(q('.ci-visits'), { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.9 }, A + 0.3)
+    qa('.ci-bar').forEach((bar, i) => {
+      const at = A + 1.0 + i * 0.35
+      tl.fromTo(bar.querySelector('.ci-bar-t'), { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.6 }, at)
+      tl.fromTo(bar.querySelector('.ci-bar-track i'), { scaleX: 0 }, { scaleX: 1, duration: 0.9, ease: 'expo.out' }, at + 0.15)
+      tl.fromTo(bar.querySelector('.ci-bar-n'), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 }, at + 0.3)
+    })
+    tl.to(q('.ci-att'), { autoAlpha: 0, duration: 0.45, ease: 'power2.in' }, A + 4.4)
+    const O = A + 4.9
+    marks.ciObserve = O
+    marks.voObserve = O + 0.1    // "We can observe behaviour." … "We cannot know intent."
+    tl.set(q('.ci-obs'), { autoAlpha: 1 }, O)
+    tl.fromTo(q('.ci-obs-a'), { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: 0.9 }, O + 0.1)
+    tl.fromTo(q('.ci-obs-b'), { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: 1.0 }, O + 2.45)
+    cue('accent', O + 2.45, 0.8)
+    tl.fromTo(q('.ci-cols'), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3 }, O + 4.5)
+    tl.fromTo(qa('.ci-col'), { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.3 }, O + 4.6)
+    tl.fromTo(q('.ci-strike'), { backgroundSize: '0% 2px' }, { backgroundSize: '100% 2px', duration: 0.8, ease: 'power2.inOut' }, O + 6.4)
+    tl.to(q('.ci-obs'), { autoAlpha: 0, duration: 0.5, ease: 'power2.in' }, O + 8.6)
+
+    // 8 · Zoom back out: the prototype is one node among many.
+    const B = O + 9.0
+    marks.ciZoomOut = B
+    marks.voBegin = B + 2.6      // "The portfolio is only the beginning."
+    const shrinkS = grid ? 1 : 0.88
+    const shrink = { scale: shrinkS, x: (W / 2) * (1 - shrinkS), y: 0.38 * H * (1 - shrinkS) }
+    const named = nodes.filter((n) => n !== pi && NAMED.includes(n.dataset.name!))
+    const unnamed = nodes.filter((n) => n !== pi && !NAMED.includes(n.dataset.name!))
+    tl.set(eco, { ...zoomPI, autoAlpha: 1 }, B)
+    tl.set(rest, { autoAlpha: 1 }, B)
+    tl.set(nodes.filter((n) => n !== pi).map((n) => n.querySelector('.ci-node-l')), { autoAlpha: 0 }, B)
+    tl.to(eco, { ...shrink, duration: 1.8, ease: 'expo.inOut' }, B + 0.1)
+    cue('air', B + 0.2, 0.8)
+    tl.to(unnamed.map((n) => n.querySelector('.ci-node-dot')), { autoAlpha: 0.35, duration: 0.6 }, B + 1.2)
+    tl.to(named.map((n) => n.querySelector('.ci-node-l')), { autoAlpha: 1, duration: 0.4, stagger: 0.08 }, B + 1.6)
+    // On grid stages the line takes the core's place.
+    if (grid) tl.to(q('.ci-core'), { autoAlpha: 0, duration: 0.4 }, B + 2.2)
+    tl.fromTo(q('.ci-begin'), { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: 0.9 }, B + 2.6)
+    tl.to([eco, q('.ci-begin')], { autoAlpha: 0, duration: 0.6, ease: 'power2.in' }, B + 5.6)
+
+    // 9 · 2030: a thesis, stated as one.
+    const Y3 = B + 6.0
+    marks.ci2030 = Y3
+    marks.vo2030 = Y3 + 0.5      // "My thesis for 2030: …"
+    marks.voExplore = Y3 + 8.6   // "Career Intelligence is an exploration of what that could look like."
+    tl.to(q('.s-ci .scene-label'), { autoAlpha: 0, duration: 0.5 }, Y3 - 0.4)
+    tl.set(q('.ci-2030'), { autoAlpha: 1 }, Y3)
+    tl.fromTo(q('.ci-2030-l'), { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.8 }, Y3 + 0.2)
+    tl.fromTo(q('.ci-year'), { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 1.4, ease: 'expo.out' }, Y3 + 0.3)
+    tl.fromTo(q('.ci-2030-a'), { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: 0.9 }, Y3 + 2.6)
+    tl.fromTo(q('.ci-2030-b'), { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: 0.9 }, Y3 + 5.9)
+    tl.fromTo(q('.ci-2030-c'), { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.9 }, Y3 + 8.6)
+    tl.to(q('.ci-2030'), { autoAlpha: 0, duration: 0.6, ease: 'power2.in' }, Y3 + 12.2)
+
+    // 10 · Close.
+    const C = Y3 + 12.6
+    marks.ciClose = C
+    tl.set(q('.ci-close'), { autoAlpha: 1 }, C)
+    tl.fromTo(qa('.ci-close-n .split__c'), { yPercent: 115 }, { yPercent: 0, duration: 1.1, ease: 'expo.out', stagger: 0.03 }, C + 0.1)
+    tl.fromTo(q('.ci-close-l'), { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.9 }, C + 1.2)
+    tl.to(q('.ci-close'), { autoAlpha: 0, duration: 0.6, ease: 'power2.in' }, C + 3.8)
+    hide('.s-ci', C + 4.5)
+    const steps = [S + 6.0, F + 5.8, Y + 8.6, Y + 12.8, E + 10.6, Z + 6.0, R + 10.0, P + 2.3, A + 3.8, O + 8.2, B + 5.0, Y3 + 11.8, C + 3.4]
+    chapters.push({ id: 'career', start: S, end: C + 4.4, key: E + 10.6, steps })
+    T = C + 4.4
   }
 
   // ════════════════════════════════════════════════════════════════════════

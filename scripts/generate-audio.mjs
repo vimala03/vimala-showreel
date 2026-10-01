@@ -350,6 +350,37 @@ function music() {
   ;[[cv.start + 2.2, 66], [cv.start + 4.3, 69], [B.cvPhoto + 0.4, 74], [B.cvLine + 0.2, 71], [B.cvLine + 2.3, 69]].forEach(([t, m], k) =>
     pluck(buf, m, t, { amp: 0.028, decay: 1.6, pan: (k % 2 ? 0.2 : -0.2), bright: 0.18 }))
 
+  // CAREER INTELLIGENCE: a question over near-silence; scattered plucks that never
+  // resolve; a pulse arrives with the model; the system opens wide, one sparkle per
+  // layer; the reading is light and steady; almost nothing under "We cannot know
+  // intent"; the zoom out swells; 2030 is a single high pad; the close resolves.
+  const ci = ch.career
+  drone(buf, 38, ci.start + 0.2, B.ciFrags + 0.6, 0.022, 2.5, 2)
+  bell(buf, 81, ci.start + 0.5, 0.025, 2.8, 0.15)
+  pad(buf, vi, B.ciFrags - 0.2, B.ciModel, { amp: 0.04, attack: 2.4, release: 1.2, cutoff: () => 800 })
+  for (let k = 0, t = B.ciFrags + 0.3; t < B.ciModel - 0.7; k++, t += BEAT * (k % 3 === 0 ? 1.5 : 1)) {
+    pluck(buf, [71, 74, 78, 69, 76][k % 5], t, { amp: 0.018, decay: 0.7, pan: Math.sin(k * 2.1) * 0.7, bright: 0.25 })
+  }
+  pad(buf, I, B.ciModel - 0.4, B.ciLayers - 1.0, { amp: 0.075, attack: 1.6, release: 1.4, cutoff: env([[B.ciModel, 900], [B.ciLayers, 1800]]) })
+  for (let t = B.ciModel + 0.2; t < B.ciModel + 9.0; t += BEAT) sub(buf, 38, t, 0.06, 0.24)
+  ;[0.2, 3.2, 4.3, 6.2, 7.6].forEach((d, i) => bell(buf, [62, 66, 69, 73, 74][i], B.ciModel + d, 0.03, 1.8, (i - 2) * 0.2))
+  pad(buf, IV, B.ciLayers - 0.6, B.ciZoom + 0.6, { amp: 0.09, attack: 1.8, release: 1.4, cutoff: env([[B.ciLayers, 1000], [B.ciZoom, 2400]]) })
+  for (let li = 0; li < 6; li++) {
+    for (let j = 0; j < 4; j++) pluck(buf, spark[(li * 2 + j) % spark.length], B.ciLayers + 2.0 + li * 1.1 + (j * BEAT) / 2, { amp: 0.012, decay: 0.3, pan: li % 2 ? 0.4 : -0.4 })
+  }
+  bell(buf, 78, B.voBuilt + 0.3, 0.03, 2.4, 0.2)
+  pad(buf, V, B.ciZoom + 0.4, B.ciAttention, { amp: 0.065, attack: 1.4, release: 1.2, cutoff: () => 1600 })
+  for (let k = 0, t = B.ciRead + 0.2; t < B.ciAttention - 0.6; k++, t += BEAT / 2) {
+    pluck(buf, arp2[k % arp2.length] - 12, t, { amp: 0.012, decay: 0.3, pan: k % 2 ? 0.25 : -0.25 })
+  }
+  pad(buf, vi, B.ciAttention - 0.3, B.ciObserve + 2.4, { amp: 0.06, attack: 1.2, release: 0.6, cutoff: () => 1200 })
+  drone(buf, 38, B.ciObserve + 2.4, B.ciZoomOut, 0.02, 1.5, 1.5)
+  pad(buf, I, B.ciZoomOut - 0.2, B.ci2030 + 0.2, { amp: 0.09, attack: 1.6, release: 1.4, cutoff: env([[B.ciZoomOut, 900], [B.ci2030, 2200]]) })
+  pad(buf, I.map((m) => m + 12), B.ci2030, B.ciClose, { amp: 0.04, attack: 2.2, release: 1.6, cutoff: () => 2600 })
+  bell(buf, 86, B.ci2030 + 0.3, 0.022, 3.2)
+  pad(buf, IV, B.ciClose - 0.3, ci.end + 0.4, { amp: 0.07, attack: 1.2, release: 1.2, cutoff: () => 1500 })
+  bell(buf, 74, B.ciClose + 0.2, 0.03, 2.6)
+
   // ENDING: the worlds come back together, then a controlled resolution.
   const en = ch.end
   pad(buf, I, en.start - 0.8, B.endP1 - 0.3, { amp: 0.09, attack: 2, release: 1.4, cutoff: env([[en.start, 1000], [B.endP1, 1900]]) })

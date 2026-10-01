@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { PROJECTS, caseStudyUrl, projectById, type Screen } from '../content/projects'
+import { CI, LAYERS, STATUS_LABEL, SURFACE_COUNT } from '../content/career'
 import { go } from '../router'
 import { useSwipe } from '../lib/useSwipe'
 import { navigateSoft } from '../lib/transition'
@@ -13,6 +14,7 @@ const SECTIONS = [
   ['screens', 'Screens'],
   ['case-study', 'Case study'],
 ] as const
+const SECTIONS_SYSTEM = [...SECTIONS.slice(0, 3), ['ecosystem', 'Ecosystem'] as const, ...SECTIONS.slice(3)]
 
 /**
  * The project, told in the order a conversation goes:
@@ -50,7 +52,7 @@ export default function ProjectOverview({ id }: { id: string }) {
           Showreel
         </button>
         <nav className="ov__sections" aria-label="Sections">
-          {SECTIONS.map(([sid, label]) => (
+          {(p.ecosystem ? SECTIONS_SYSTEM : SECTIONS).map(([sid, label]) => (
             <button key={sid} type="button" className="ov__section-btn" onClick={() => jump(sid)}>{label}</button>
           ))}
         </nav>
@@ -104,7 +106,7 @@ export default function ProjectOverview({ id }: { id: string }) {
               <figcaption>{decision.image.caption}</figcaption>
             </figure>
           ) : (
-            <div className="ov__decision-empty"><span className="meta">No product UI for this decision</span></div>
+            <div className="ov__decision-empty"><span className="meta">{decision.note ?? 'No product UI for this decision'}</span></div>
           )}
         </div>
       </section>
@@ -118,6 +120,34 @@ export default function ProjectOverview({ id }: { id: string }) {
           ))}
         </ul>
       </section>
+
+      {/* The concept ecosystem (Career Intelligence) */}
+      {p.ecosystem && (
+        <section id="ecosystem" className="ov__block">
+          <div className="ov__block-head"><h2 className="meta">Ecosystem · {LAYERS.length} intelligence layers · {SURFACE_COUNT} product surfaces explored</h2></div>
+          <p className="ov__p ov__p--muted eco__note">A concept ecosystem, not a product list: two surfaces are built and working today; the rest are explored or future directions.</p>
+          <ol className="eco">
+            {LAYERS.map((l, i) => (
+              <li key={l.name} className="eco__layer">
+                <h3 className="eco__h"><span className="eco__i">0{i + 1}</span>{l.name}</h3>
+                <ul className="eco__list">
+                  {l.surfaces.map((sf) => (
+                    <li key={sf.name} className="eco__item" data-status={sf.status}>
+                      <span>{sf.name}</span>
+                      <span className="eco__tag">{STATUS_LABEL[sf.status]}</span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ol>
+          <div className="eco__thesis">
+            <p className="meta">{CI.thesisLabel}</p>
+            <p className="eco__thesis-t">{CI.thesisA} {CI.thesisB}</p>
+            <p className="ov__p ov__p--muted">{CI.thesisC}</p>
+          </div>
+        </section>
+      )}
 
       {/* Selected screens */}
       <section id="screens" className="ov__block">
@@ -139,12 +169,12 @@ export default function ProjectOverview({ id }: { id: string }) {
         <p className="ov__thesis">{p.thesis}</p>
         {online ? (
           <a className="cta" href={caseStudyUrl(p)} target="_blank" rel="noopener">
-            Explore full case study
+            {p.external?.label ?? 'Explore full case study'}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" /></svg>
-            <span className="visually-hidden">(opens the live portfolio in a new tab)</span>
+            <span className="visually-hidden">{p.external?.hint ?? '(opens the live portfolio in a new tab)'}</span>
           </a>
         ) : (
-          <span className="cta cta--off" aria-disabled="true">Full case study needs a connection</span>
+          <span className="cta cta--off" aria-disabled="true">{p.external ? 'The prototype needs a connection' : 'Full case study needs a connection'}</span>
         )}
         <p className="meta ov__url">{caseStudyUrl(p).replace('https://', '')}</p>
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { PointerEvent as RPointerEvent } from 'react'
 import { gsap } from 'gsap'
-import { SceneCivtech, SceneCornerstone, SceneEnd, SceneFlyin, SceneOpening, SceneYouClean, type Layout } from './Scenes'
+import { SceneCareer, SceneCivtech, SceneCornerstone, SceneEnd, SceneFlyin, SceneOpening, SceneYouClean, type Layout } from './Scenes'
 import { buildReel, STAGE, type Chapter, type ChapterId } from './timeline'
 import { PROJECTS } from '../content/projects'
 import { openWithTransition } from '../lib/transition'
@@ -17,17 +17,20 @@ function pickLayout(w: number, h: number): Layout {
   return h < 560 ? 'short' : 'land'
 }
 const PROJECT_OF: Partial<Record<ChapterId, string>> = {
-  youclean: 'youclean', cornerstone: 'cornerstone', flyin: 'flyin', civtech: 'civtech',
+  youclean: 'youclean', cornerstone: 'cornerstone', flyin: 'flyin', civtech: 'civtech', career: 'career',
 }
 const LABEL: Record<ChapterId, string> = {
-  open: 'Intro', youclean: 'YouClean', cornerstone: 'Cornerstone', flyin: 'Flyin', civtech: 'Menopause Care', end: 'Close',
+  open: 'Intro', youclean: 'YouClean', cornerstone: 'Cornerstone', flyin: 'Flyin', civtech: 'Menopause Care', career: 'Career Intelligence', end: 'Close',
 }
 /** The element that morphs into the overview hero when a scene is opened. */
 const HERO_OF: Record<string, string> = {
-  youclean: '.yc-dash', cornerstone: '.cs-panel', flyin: '.fl-desk', civtech: '.cv-photo',
+  youclean: '.yc-dash', cornerstone: '.cs-panel', flyin: '.fl-desk', civtech: '.cv-photo', career: '.ci-shot--hero',
 }
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+/** Rail width per chapter: by duration, but short chapters stay legible and long ones don't dominate. */
+const railWeight = (c: Chapter) => Math.min(24, Math.max(10, c.end - c.start))
 
 /**
  * Two viewports, deliberately kept apart:
@@ -227,11 +230,29 @@ export default function Reel() {
     }
   }, [chapters, rm])
 
+  /** Reduced motion: show one settled frame of a long chapter. */
+  const seekFrame = useCallback((t: number) => {
+    const tl = tlRef.current
+    if (!tl) return
+    gsap.fromTo(stageRef.current!, { opacity: 0 }, { opacity: 1, duration: 0.35 })
+    tl.seek(t, false)
+  }, [])
+
   const step = useCallback((dir: 1 | -1) => {
     const i = chapters.findIndex((c) => c.id === current)
+    // Reduced motion walks through a long chapter's frames before leaving it.
+    const frames = rm ? chapters[i]?.steps : undefined
+    if (frames && tlRef.current) {
+      const t = tlRef.current.time()
+      const next = dir > 0 ? frames.find((f) => f > t + 0.01) : [...frames].reverse().find((f) => f < t - 0.01)
+      if (next !== undefined) { seekFrame(next); return }
+    }
     const j = Math.min(chapters.length - 1, Math.max(0, i + dir))
-    if (j !== i) goChapter(j)
-  }, [chapters, current, goChapter])
+    if (j === i) return
+    const into = rm ? chapters[j].steps : undefined
+    if (into) seekFrame(dir > 0 ? into[0] : into[into.length - 1])
+    else goChapter(j)
+  }, [chapters, current, goChapter, rm, seekFrame])
 
   /** Pause and morph the current scene into the project's overview. */
   const openProject = useCallback((id: string) => {
@@ -305,8 +326,13 @@ export default function Reel() {
     const tl = tlRef.current
     const r = trackRef.current?.getBoundingClientRect()
     if (!tl || !r) return
-    const p = Math.min(1, Math.max(0, (clientX - r.left) / r.width))
-    tl.seek(p * duration, false)
+    // Through the same weights the rail is drawn with, so the fill follows the finger.
+    let acc = Math.min(1, Math.max(0, (clientX - r.left) / r.width)) * chapters.reduce((n, c) => n + railWeight(c), 0)
+    for (const c of chapters) {
+      const w = railWeight(c)
+      if (acc <= w || c === chapters[chapters.length - 1]) { tl.seek(c.start + Math.min(1, acc / w) * (c.end - c.start), false); return }
+      acc -= w
+    }
   }
   const onTrackDown = (e: RPointerEvent<HTMLDivElement>) => {
     if (rm) return
@@ -341,8 +367,8 @@ export default function Reel() {
     <div className="reel" data-layout={layout} data-ready={ready || undefined} style={{ height: vp.h }}>
       <h1 className="visually-hidden">Vimala Banavath: showreel of selected work</h1>
       <p className="visually-hidden">
-        An animated reel of four projects: YouClean, Cornerstone, Flyin and Menopause Care. Use the chapter controls
-        below to open any project, or pause the reel.
+        An animated reel of five projects: YouClean, Cornerstone, Flyin, Menopause Care and Career Intelligence. Use the
+        chapter controls below to open any project, or pause the reel.
       </p>
 
       <div
@@ -366,6 +392,7 @@ export default function Reel() {
           <SceneCornerstone layout={layout} />
           <SceneFlyin />
           <SceneCivtech />
+          <SceneCareer />
           <SceneEnd />
           <span className="sig" />
         </div>
@@ -405,7 +432,7 @@ export default function Reel() {
             tabIndex={-1}
           >
             {chapters.map((c, i) => (
-              <span key={c.id} className="rail__seg" style={{ flexGrow: c.end - c.start }}>
+              <span key={c.id} className="rail__seg" style={{ flexGrow: railWeight(c) }}>
                 <span className="rail__fill" ref={(el) => { fillRefs.current[i] = el }} />
               </span>
             ))}
@@ -415,7 +442,7 @@ export default function Reel() {
               const pid = PROJECT_OF[c.id]
               const p = pid ? PROJECTS.find((x) => x.id === pid) : undefined
               return (
-                <li key={c.id} style={{ flexGrow: c.end - c.start }} className={p ? 'is-project' : 'is-bookend'}>
+                <li key={c.id} style={{ flexGrow: railWeight(c) }} className={p ? 'is-project' : 'is-bookend'}>
                   <button
                     type="button"
                     className="rail__chapter"

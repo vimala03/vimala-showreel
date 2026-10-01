@@ -8,6 +8,8 @@
  * Nothing is invented.
  */
 
+import { CI_URL } from './career'
+
 export type Screen = {
   src: string
   alt: string
@@ -21,12 +23,18 @@ export type Decision = {
   decision: string
   why: string
   image?: Screen
+  /** Shown in place of an image when the decision has no product UI. */
+  note?: string
 }
 
 export type Project = {
-  id: 'youclean' | 'cornerstone' | 'flyin' | 'civtech'
+  id: 'youclean' | 'cornerstone' | 'flyin' | 'civtech' | 'career'
   /** Route on the live portfolio. */
   liveSlug: string
+  /** Where "Explore" goes when it isn't a live-portfolio case study (and how it's labelled). */
+  external?: { url: string; label: string; hint: string }
+  /** Show the intelligence-layer ecosystem section on the overview. */
+  ecosystem?: boolean
   index: string
   shortName: string
   name: string
@@ -47,7 +55,7 @@ export type Project = {
 
 export const PORTFOLIO_URL = 'https://vimaladesigner.vercel.app'
 
-export const caseStudyUrl = (p: Project) => `${PORTFOLIO_URL}/work/${p.liveSlug}`
+export const caseStudyUrl = (p: Project) => p.external?.url ?? `${PORTFOLIO_URL}/work/${p.liveSlug}`
 
 const img = {
   ycCover: { src: '/img/youclean/dashboard.jpg', alt: 'YouClean CRM dashboard: orders, revenue, in progress, ready for pickup, revenue trend, today’s schedule and recent orders.', caption: 'The CRM and operations system behind YouClean Laundry.' },
@@ -66,6 +74,10 @@ const img = {
   cvJourney: { src: '/img/civtech/journey-map.jpg', alt: 'Care journey map from awareness through GP, diagnosis, treatment and specialist care, with wait times highlighted.', caption: 'The journey as disconnected stages, with wait-time friction highlighted.', panel: true },
   cvStructure: { src: '/img/civtech/structure.jpg', alt: 'Map of responsibility for menopause care in Scotland, from national policy to providers.', caption: 'Responsibility for care, from national policy down to individual providers.', panel: true },
   cvBrainstorm: { src: '/img/civtech/brainstorm.jpg', alt: 'Team journey brainstorm board.', caption: 'Eight research inputs, one investigation.' },
+  ciHero: { src: '/img/career/hero.jpg', alt: 'Career Intelligence home: “Your portfolio tells a story.” Lines of evidence converge into one signal.', caption: 'The working prototype: Portfolio Intelligence.' },
+  ciReading: { src: '/img/career/reading.jpg', alt: 'Sample reading: the claim “I design products for complexity”, three excerpts converging into the signal “Systems before screens”, the gap “Design systems”, and the next move.', caption: 'A claim, the excerpts that test it, the signal or the gap, and one next move.', panel: true },
+  ciAttention: { src: '/img/career/attention.jpg', alt: 'Attention Intelligence sample: 18 visits, 13 opened Ledger, 10 opened Atlas, 7 opened About, and a repeated path.', caption: 'Attention Intelligence on sample data: a fictional portfolio, nothing real was tracked.', panel: true },
+  ciObserve: { src: '/img/career/observe.jpg', alt: '“We can observe behaviour. We cannot know intent.” Observed, interpreted and never claimed, side by side.', caption: 'What was observed, what can be interpreted, and what is never claimed.' },
 } satisfies Record<string, Screen>
 
 export const PROJECTS: Project[] = [
@@ -219,6 +231,46 @@ export const PROJECTS: Project[] = [
     cover: img.cvCover,
     screens: [img.cvJourney, img.cvStructure, img.cvBrainstorm, img.cvCover],
     tint: '#d9a868',
+  },
+  {
+    id: 'career',
+    liveSlug: '',
+    external: { url: CI_URL, label: 'Open the working prototype', hint: '(opens Career Intelligence in a new tab)' },
+    ecosystem: true,
+    index: '05',
+    shortName: 'Career Intelligence',
+    name: 'Career Intelligence OS',
+    company: 'Product thesis & working prototype',
+    category: 'Product strategy · AI · Future of work · Systems',
+    dimension: 'Future-facing product systems',
+    roleTitle: 'Product vision, design & prototype',
+    period: '2026',
+    lede: 'A career-intelligence system exploring how professional evidence, capabilities, opportunities and behavioural signals could become one living career model.',
+    thesis: 'The résumé tells people what you’ve done. Career Intelligence asks what your work actually proves.',
+    highlights: ['6 intelligence layers · 30+ product surfaces explored', 'Working prototype: Portfolio Intelligence and Attention Intelligence', 'Observation kept separate from inference'],
+    decisions: [
+      {
+        heading: 'Test the claim against the evidence',
+        decision: 'Portfolio Intelligence reads a claim against the excerpts that test it. Where they converge, a signal; where they’re thin, a gap; then one next move.',
+        why: 'Polished claims are easy to produce. What a person can act on is what their work actually proves, and what is still missing.',
+        image: img.ciReading,
+      },
+      {
+        heading: 'Observe behaviour, never assume intent',
+        decision: 'Attention Intelligence keeps what was observed, what can be interpreted, and what is never claimed in separate places.',
+        why: 'A visit count can’t say who visited or why, so the product never implies that a recruiter looked.',
+        image: img.ciObserve,
+      },
+      {
+        heading: 'One surface of a larger system',
+        decision: 'Portfolio Intelligence is the first working surface of six intelligence layers: identity, evidence, capability, opportunity, signals and a future ecosystem.',
+        why: 'Most career products optimise one artifact. The thesis is the connective layer between them: evidence → capability → opportunity → signal.',
+        note: 'Concept ecosystem · explored, not built',
+      },
+    ],
+    cover: img.ciHero,
+    screens: [img.ciHero, img.ciReading, img.ciAttention, img.ciObserve],
+    tint: '#6bb0d0',
   },
 ]
 

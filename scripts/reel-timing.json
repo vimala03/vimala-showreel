@@ -1,6 +1,6 @@
 {
   "_readme": "Exported from the live timeline (src/reel/timeline.ts). Marks are reel seconds: vo* = where each voiceover line starts; the rest are visual beats the music is composed to.",
-  "duration": 96.15,
+  "duration": 192.85,
   "chapters": [
     {
       "id": "open",
@@ -28,9 +28,14 @@
       "end": 75.05
     },
     {
-      "id": "end",
+      "id": "career",
       "start": 75.05,
-      "end": 96.15
+      "end": 171.75
+    },
+    {
+      "id": "end",
+      "start": 171.75,
+      "end": 192.85
     }
   ],
   "marks": {
@@ -58,12 +63,35 @@
     "voAmbiguity": 62.85,
     "cvPhoto": 67.65,
     "cvLine": 71.85,
-    "endLoop": 76.35,
-    "voBelief": 78.95,
-    "voHow1": 82.75,
-    "voHow2": 84.9,
-    "voHow3": 87.7,
-    "endName": 91.45,
-    "voIdentity": 91.95
+    "ciQuestion": 77.85,
+    "voQuestion": 75.55,
+    "ciFrags": 82.15,
+    "voScattered": 82.35,
+    "ciModel": 89.15,
+    "voModel": 89.35,
+    "ciLayers": 102.75,
+    "voLayers": 103.15,
+    "voBuilt": 111.65,
+    "ciZoom": 113.75,
+    "voFirst": 114.25,
+    "ciRead": 120.75,
+    "voRead": 121.05,
+    "ciAttention": 134.85,
+    "voSend": 135.15,
+    "ciObserve": 139.75,
+    "voObserve": 139.85,
+    "ciZoomOut": 148.75,
+    "voBegin": 151.35,
+    "ci2030": 154.75,
+    "vo2030": 155.25,
+    "voExplore": 163.35,
+    "ciClose": 167.35,
+    "endLoop": 173.05,
+    "voBelief": 175.65,
+    "voHow1": 179.45,
+    "voHow2": 181.6,
+    "voHow3": 184.4,
+    "endName": 188.15,
+    "voIdentity": 188.65
   }
 }

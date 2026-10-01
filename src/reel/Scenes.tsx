@@ -1,6 +1,7 @@
 import { Split } from './Split'
 import { PROFILE } from '../content/profile'
 import { PROJECTS, REEL_FACTS } from '../content/projects'
+import { ATTENTION, CI, LAYERS, READING, STATUS_LABEL } from '../content/career'
 
 /**
  * Stage compositions. Each is a fixed virtual canvas scaled to fit, with its own
@@ -12,7 +13,7 @@ import { PROJECTS, REEL_FACTS } from '../content/projects'
  */
 export type Layout = 'land' | 'port' | 'phone' | 'short'
 
-const [YC, CS, FL, CV] = PROJECTS
+const [YC, CS, FL, CV, CR] = PROJECTS
 
 /* ── Opening ───────────────────────────────────────────────────────────── */
 
@@ -254,6 +255,169 @@ export function SceneCivtech() {
   )
 }
 
+/* ── 05 Career Intelligence ────────────────────────────────────────────── */
+
+/** Every surface, flattened in layer order (positions are set per layout in the timeline). */
+export const CI_SURFACES = LAYERS.flatMap((l, li) => l.surfaces.map((sf) => ({ ...sf, layer: li })))
+
+export function SceneCareer() {
+  return (
+    <section className="scene s-ci" data-scene="career">
+      <SceneLabel index={CR.index} name={CR.shortName} dimension={CR.dimension} />
+      <svg className="ci-svg" aria-hidden="true">
+        {CI.fragments.slice(0, 6).map((f) => <path key={f} className="ci-frag-link" fill="none" />)}
+        {READING.excerpts.map((e) => <path key={e.source} className="ci-conv" fill="none" />)}
+        <path className="ci-gapline" fill="none" />
+      </svg>
+
+      {/* The question */}
+      <div className="ci-q">
+        <p className="ci-q-t"><Split text={CI.question} by="word" /></p>
+        <p className="meta ci-q-n">{CI.name}</p>
+      </div>
+
+      {/* Fragmentation */}
+      <div className="ci-frags">
+        {CI.fragments.map((f) => <span key={f} className="ci-frag">{f}</span>)}
+      </div>
+      <div className="ci-caps">
+        <p className="ci-cap-a">{CI.everywhere}</p>
+        <p className="ci-cap-b">{CI.isnt}</p>
+      </div>
+
+      {/* The model */}
+      <div className="ci-model">
+        {CI.model.map((m, i) => (
+          <span key={m} className="ci-model-step">
+            {i > 0 && <i className="ci-model-arrow" aria-hidden="true" />}
+            <span className="ci-model-n">{m}</span>
+          </span>
+        ))}
+      </div>
+      <div className="ci-doc">
+        <p className="ci-doc-a">{CI.documents}</p>
+        <p className="ci-doc-b">{CI.living}</p>
+      </div>
+
+      {/* The ecosystem: six layers, every surface */}
+      <div className="ci-eco">
+        <svg className="ci-eco-svg" aria-hidden="true">
+          {LAYERS.map((l) => <path key={l.name} className="ci-spoke" fill="none" />)}
+          {CI_SURFACES.map((sf) => <path key={sf.name} className="ci-twig" fill="none" data-status={sf.status} />)}
+        </svg>
+        <div className="ci-core">
+          <span className="ci-core-v ci-core-v--layers"><b>6</b><span>intelligence layers</span></span>
+          <span className="ci-core-v ci-core-v--surfaces"><b>30+</b><span>product surfaces explored</span></span>
+        </div>
+        {LAYERS.map((l, i) => (
+          <span key={l.name} className="ci-hub">
+            <i className="ci-hub-dot" />
+            <span className="ci-hub-l"><span className="ci-hub-i">0{i + 1}</span>{l.name}</span>
+          </span>
+        ))}
+        {CI_SURFACES.map((sf) => (
+          <span key={sf.name} className="ci-node" data-status={sf.status} data-name={sf.name}>
+            <i className="ci-node-dot" />
+            <span className="ci-node-l">{sf.name}</span>
+          </span>
+        ))}
+      </div>
+      <p className="ci-legend">
+        {(['built', 'explored', 'future'] as const).map((st) => (
+          <span key={st} className="ci-legend-i" data-status={st}><i />{STATUS_LABEL[st]}</span>
+        ))}
+      </p>
+      <p className="ci-begin">{CI.beginning}</p>
+
+      {/* The first experiment */}
+      <div className="ci-first">
+        <p className="ci-first-t">{CI.first}</p>
+        <div className="ci-shot ci-shot--hero frame"><img src="/img/career/hero.jpg" alt="" /></div>
+      </div>
+
+      {/* Claim → evidence → signal / gap → next move */}
+      <div className="ci-read">
+        <div className="ci-row ci-row--a">
+          <div className="ci-claim"><span className="ci-k">The portfolio says</span><p className="ci-claim-t">“{READING.claim}”</p></div>
+          <div className="ci-exs">
+            {READING.excerpts.map((e) => (
+              <div key={e.source} className="ci-ex"><p>“{e.text}”</p><span className="ci-src">{e.source}</span></div>
+            ))}
+          </div>
+          <div className="ci-out ci-out--signal">
+            <i className="ci-knot" />
+            <span className="ci-k">The signal</span>
+            <p className="ci-out-t">{READING.signal}</p>
+            <span className="ci-out-n">{READING.signalNote}</span>
+          </div>
+        </div>
+        <div className="ci-row ci-row--b">
+          <div className="ci-claim"><span className="ci-k">It also says</span><p className="ci-claim-t">“{READING.claim2}”</p></div>
+          <div className="ci-exs">
+            <div className="ci-ex"><p>“{READING.excerpt2.text}”</p><span className="ci-src">{READING.excerpt2.source}</span></div>
+          </div>
+          <div className="ci-out ci-out--gap">
+            <i className="ci-knot" />
+            <span className="ci-k">The gap</span>
+            <p className="ci-out-t">{READING.gap}</p>
+            <span className="ci-out-n">{READING.gapNote}</span>
+          </div>
+        </div>
+        <div className="ci-next"><span className="ci-k">The next move</span><p>{READING.next}</p></div>
+      </div>
+      <div className="ci-proof">
+        <div className="ci-shot ci-shot--read frame"><img src="/img/career/reading.jpg" alt="" /></div>
+        <p className="meta ci-proof-l">Working prototype · sample reading</p>
+      </div>
+
+      {/* Attention Intelligence */}
+      <div className="ci-att">
+        <span className="ci-sample">{ATTENTION.sample}</span>
+        <div className="ci-visits">
+          <span className="ci-k">{ATTENTION.period}</span>
+          <p className="ci-visits-n"><b>{ATTENTION.visits}</b> visits</p>
+        </div>
+        <div className="ci-bars">
+          {ATTENTION.opened.map((o) => (
+            <div key={o.name} className="ci-bar">
+              <p className="ci-bar-t"><b>{o.n}</b> opened <b>{o.name}</b></p>
+              <span className="ci-bar-track"><i style={{ width: `${(o.n / ATTENTION.visits) * 100}%` }} /></span>
+              <span className="ci-bar-n">{o.note}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="ci-obs">
+        <p className="ci-obs-a">{ATTENTION.observe}</p>
+        <p className="ci-obs-b">{ATTENTION.intent}</p>
+        <div className="ci-cols">
+          {[ATTENTION.observed, ATTENTION.interpreted, ATTENTION.never].map((c, i) => (
+            <div key={c.k} className={`ci-col ci-col--${i}`}>
+              <span className="ci-col-k"><i />{c.k}</span>
+              <p className="ci-col-v">{i === 2 ? <span className="ci-strike">{c.v}</span> : c.v}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 2030 */}
+      <div className="ci-2030">
+        <span className="meta ci-2030-l">{CI.thesisLabel}</span>
+        <span className="ci-year">2030</span>
+        <p className="ci-2030-a">{CI.thesisA}</p>
+        <p className="ci-2030-b">{CI.thesisB}</p>
+        <p className="ci-2030-c">{CI.thesisC}</p>
+      </div>
+
+      {/* Close */}
+      <div className="ci-close">
+        <h3 className="ci-close-n"><Split text={CI.name} /></h3>
+        <p className="ci-close-l">{CI.close}</p>
+      </div>
+    </section>
+  )
+}
+
 /* ── Ending ────────────────────────────────────────────────────────────── */
 
 export function SceneEnd() {
@@ -261,7 +425,7 @@ export function SceneEnd() {
     <section className="scene s-end" data-scene="end">
       <svg className="end-svg" aria-hidden="true"><path className="end-loop" fill="none" /></svg>
       <div className="end-frames">
-        {PROJECTS.map((p) => (
+        {PROJECTS.slice(0, 4).map((p) => (
           <div key={p.id} className={`end-frame end-frame--${p.id}`}>
             <div className="end-frame__img"><img src={p.cover.src} alt="" /></div>
             <span className="meta end-frame__n">{p.index} {p.shortName}</span>

@@ -7,7 +7,7 @@ export default function SelectedWork() {
       <header className="work__head">
         <p className="meta">Selected work</p>
         <h1 id="work-heading" className="work__title" tabIndex={-1} data-screen-heading>
-          Four projects, four sides of how I work.
+          Five projects, five sides of how I work.
         </h1>
       </header>
       <ol className="work__list">
