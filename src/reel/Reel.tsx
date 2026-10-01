@@ -29,24 +29,64 @@ const HERO_OF: Record<string, string> = {
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
+/**
+ * Two viewports, deliberately kept apart:
+ *  - `w`/`h`: the area visible right now (the visual viewport). Mobile browser
+ *    toolbars grow and shrink it; it only ever rescales the stage.
+ *  - `cw`/`ch`: what the composition is chosen from. On touch devices spanning the
+ *    screen this is the device screen in the current orientation, so Safari or Chrome
+ *    with their toolbars showing picks the same composition as the installed app, and
+ *    a toolbar collapsing never rebuilds the reel mid-scene.
+ */
+function readViewport() {
+  const vv = window.visualViewport
+  const zoomed = vv ? Math.abs(vv.scale - 1) > 0.01 : false
+  const w = window.innerWidth
+  const h = Math.round(vv && !zoomed ? vv.height : window.innerHeight)
+  let ch = h
+  if (window.matchMedia('(pointer: coarse)').matches && window.screen) {
+    const short = Math.min(screen.width, screen.height)
+    const long = Math.max(screen.width, screen.height)
+    const [sw, sh] = h > w ? [short, long] : [long, short]
+    // Only when the page spans the screen (not iPad split view or Stage Manager).
+    if (sw > 0 && Math.abs(w - sw) <= 2 && sh >= h) ch = sh
+  }
+  return { w, h, cw: w, ch }
+}
+
 function useViewport() {
-  const read = () => ({ w: window.innerWidth, h: window.innerHeight })
-  const [vp, setVp] = useState(read)
+  const [vp, setVp] = useState(readViewport)
   useEffect(() => {
     let raf = 0
-    const on = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setVp(read())) }
+    const on = () => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => {
+        const n = readViewport()
+        setVp((p) => (p.w === n.w && p.h === n.h && p.cw === n.cw && p.ch === n.ch ? p : n))
+      })
+    }
+    const vv = window.visualViewport
+    const coarse = window.matchMedia('(pointer: coarse)')
     window.addEventListener('resize', on)
     window.addEventListener('orientationchange', on)
-    return () => { window.removeEventListener('resize', on); window.removeEventListener('orientationchange', on) }
+    vv?.addEventListener('resize', on)
+    coarse.addEventListener('change', on)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', on)
+      window.removeEventListener('orientationchange', on)
+      vv?.removeEventListener('resize', on)
+      coarse.removeEventListener('change', on)
+    }
   }, [])
   return vp
 }
 
 export default function Reel() {
   const vp = useViewport()
-  const layout = pickLayout(vp.w, vp.h)
+  const layout = pickLayout(vp.cw, vp.ch)
   // Shorter phones (iPhone SE-class, 320×568) get a compact 600×740 phone composition.
-  const compact = layout === 'phone' && vp.h / vp.w < 1.95
+  const compact = layout === 'phone' && vp.ch / vp.cw < 1.95
   const [W, H]: [number, number] = compact ? [600, 740] : STAGE[layout]
 
   // The stage fills exactly the space between the real top bar and the real rail
@@ -61,7 +101,7 @@ export default function Reel() {
       const bottom = railRef.current?.offsetHeight ?? 104
       const v = viewportRef.current
       // Height from the chrome itself (the viewport element may not have re-laid out yet).
-      setFrame({ top, bottom, w: v?.clientWidth ?? window.innerWidth, h: Math.max(0, window.innerHeight - top - bottom) })
+      setFrame({ top, bottom, w: v?.clientWidth ?? vp.w, h: Math.max(0, vp.h - top - bottom) })
     }
     measure()
     const ro = new ResizeObserver(measure)
@@ -140,6 +180,9 @@ export default function Reel() {
 
     return () => {
       cancelled = true
+      // Keep the position before reverting: revert re-renders the old timeline.
+      const old = tlRef.current
+      if (old) { reelMemory.time = old.time(); old.eventCallback('onUpdate', null) }
       audio.detach()
       loopCall.current?.kill()
       ctx?.revert()
@@ -295,7 +338,7 @@ export default function Reel() {
   const currentProject = PROJECT_OF[current] ? PROJECTS.find((p) => p.id === PROJECT_OF[current]) : undefined
 
   return (
-    <div className="reel" data-layout={layout} data-ready={ready || undefined}>
+    <div className="reel" data-layout={layout} data-ready={ready || undefined} style={{ height: vp.h }}>
       <h1 className="visually-hidden">Vimala Banavath: showreel of selected work</h1>
       <p className="visually-hidden">
         An animated reel of four projects: YouClean, Cornerstone, Flyin and Menopause Care. Use the chapter controls
